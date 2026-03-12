@@ -313,7 +313,7 @@ SEED_CDT_CODES: list[tuple] = [
         ["D2750"],
         "D2950 core buildup often denied same date",
         "Usually 1x per tooth per 60 months",
-        False,
+        True,
         ["frequency limitation", "missing documentation of necessity", "buildup denied"],
     ),
     (
