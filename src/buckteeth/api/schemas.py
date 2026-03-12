@@ -167,3 +167,43 @@ class ClaimResponse(BaseModel):
 
 class ClaimStatusUpdate(BaseModel):
     status: str
+
+
+# ── Submissions ──────────────────────────────────────────────────────────
+
+
+class SubmitClaimRequest(BaseModel):
+    claim_id: uuid.UUID
+
+
+class SubmitBatchRequest(BaseModel):
+    claim_ids: list[uuid.UUID]
+
+
+class SubmissionResponse(BaseModel):
+    id: uuid.UUID
+    claim_id: uuid.UUID
+    channel: str
+    clearinghouse_name: str | None = None
+    tracking_number: str | None = None
+    confirmation_number: str | None = None
+    status: str
+    error_message: str | None = None
+    created_at: datetime | None = None
+    model_config = {"from_attributes": True}
+
+
+class EligibilityRequest(BaseModel):
+    patient_id: uuid.UUID
+    payer_id: str
+    subscriber_id: str
+    date_of_service: str
+
+
+class EligibilityCheckResponse(BaseModel):
+    eligible: bool
+    annual_maximum: float | None = None
+    annual_used: float | None = None
+    annual_remaining: float | None = None
+    deductible: float | None = None
+    deductible_met: float | None = None
