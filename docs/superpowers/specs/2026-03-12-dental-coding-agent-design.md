@@ -277,7 +277,7 @@ GET    /admin/audit-log                     -> AuditLogEntry[] (paginated)
 
 ### Streaming (SSE)
 
-The `/coding/preview` endpoint uses Server-Sent Events to stream coding suggestions progressively as Claude processes the input. The frontend opens an SSE connection and receives incremental `CodedProcedure` objects.
+The `/coding/preview` endpoint uses Server-Sent Events to stream coding suggestions progressively as Claude processes the input. The frontend opens an SSE connection and receives incremental `CodedProcedure` objects. Since the browser `EventSource` API cannot send custom headers, SSE authentication uses a short-lived token passed as a query parameter (generated via a dedicated `/auth/sse-token` endpoint, 60-second TTL, single-use).
 
 ## Data Model
 
@@ -498,4 +498,7 @@ Initial manual curation for major payers: Delta Dental, MetLife, Cigna, Aetna, U
 - **CI/CD:** GitHub Actions
 - **Containers:** Docker, deployed via AWS ECS
 - **Monitoring:** AWS CloudWatch for infrastructure metrics, Sentry for error tracking. Key dashboards: Claude API latency/error rates, claim submission success rates, AI confidence score distributions, failed auth attempts, PHI access anomalies
-- **Backups:** Automated daily with point-in-time recovery, 30-day retention
+- **Backups:** Automated daily with point-in-time recovery, 30-day retention. RTO target: 4 hours. RPO target: 1 hour (via RDS continuous backup). Cross-region replication deferred to post-MVP.
+- **Audit log storage:** Audit logs written to CloudWatch Logs with a restrictive resource policy (application role can write but not delete/modify). Provides tamper-evidence without relying on application-level hash chain alone.
+- **Rate limiting:** Per-tenant rate limits on AI-triggering endpoints (`/coding/preview`, `/encounters/from-*`, `/denials/*/generate-appeal`) to manage Claude API costs. Default: 60 AI requests/minute per tenant. Configurable per plan tier.
+- **API versioning:** All endpoints prefixed with `/v1/`. Breaking changes require a new version prefix.
