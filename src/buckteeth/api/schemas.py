@@ -116,3 +116,54 @@ class OverrideProcedureRequest(BaseModel):
     cdt_code: str
     cdt_description: str
     override_reason: str
+
+
+# ── Claims ───────────────────────────────────────────────────────────────
+
+
+class ClaimCreateRequest(BaseModel):
+    coded_encounter_id: uuid.UUID
+
+
+class ClaimNarrativeResponse(BaseModel):
+    id: uuid.UUID
+    cdt_code: str
+    narrative_text: str
+    generated_by: str
+    payer_tailored: bool = False
+    model_config = {"from_attributes": True}
+
+
+class ClaimProcedureAPIResponse(BaseModel):
+    id: uuid.UUID
+    cdt_code: str
+    cdt_description: str
+    tooth_number: str | None = None
+    surfaces: str | None = None
+    quadrant: str | None = None
+    fee_submitted: float | None = None
+    model_config = {"from_attributes": True}
+
+
+class ClaimResponse(BaseModel):
+    id: uuid.UUID
+    patient_id: uuid.UUID
+    coded_encounter_id: uuid.UUID
+    provider_name: str
+    date_of_service: str
+    status: str
+    primary_payer_name: str
+    primary_payer_id: str
+    primary_subscriber_id: str
+    primary_group_number: str
+    secondary_payer_name: str | None = None
+    preauth_required: bool = False
+    total_fee_submitted: float | None = None
+    procedures: list[ClaimProcedureAPIResponse] = []
+    narratives: list[ClaimNarrativeResponse] = []
+    created_at: datetime | None = None
+    model_config = {"from_attributes": True}
+
+
+class ClaimStatusUpdate(BaseModel):
+    status: str
