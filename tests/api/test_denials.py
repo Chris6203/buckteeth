@@ -260,6 +260,28 @@ async def test_list_denials(client, engine):
     assert denial_id in ids
 
 
+async def test_list_denials_filter_by_status(client, engine):
+    denial_id, _ = await _create_denial(client, engine)
+
+    # Filter by "denied" should return the denial
+    response = await client.get(
+        "/v1/denials?status=denied",
+        headers={"X-Tenant-ID": TENANT_ID},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert all(d["status"] == "denied" for d in data)
+
+    # Filter by "overturned" should return nothing
+    response2 = await client.get(
+        "/v1/denials?status=overturned",
+        headers={"X-Tenant-ID": TENANT_ID},
+    )
+    assert response2.status_code == 200
+    assert len(response2.json()) == 0
+
+
 async def test_get_denial(client, engine):
     denial_id, claim_id = await _create_denial(client, engine)
 
@@ -342,3 +364,85 @@ async def test_send_commissioner_letter(client, engine):
     assert data["state"] == "CA"
     assert data["trigger_type"] == "manual"
     assert "id" in data
+
+
+async def test_list_commissioner_letters(client, engine):
+    denial_id, _ = await _create_denial(client, engine)
+
+    mock_letter = CommLetterGenResponse(
+        letter_text="Dear Commissioner...",
+        commissioner_name="California Department of Insurance",
+        commissioner_address="300 Capitol Mall, Sacramento, CA 95814",
+        case_law_citations=["Hughes v. Blue Cross (1989)"],
+        regulatory_citations=["CA Insurance Code § 10123.135"],
+    )
+
+    with patch("buckteeth.api.denials.CommissionerLetterGenerator") as MockGen:
+        MockGen.return_value.generate = AsyncMock(return_value=mock_letter)
+
+        await client.post(
+            f"/v1/denials/{denial_id}/send-commissioner-letter",
+            json={
+                "patient_address": "123 Main St, Los Angeles, CA 90001",
+                "provider_address": "456 Dental Ave, Los Angeles, CA 90002",
+                "clinical_notes": "Recurrent decay",
+                "state": "CA",
+            },
+            headers={"X-Tenant-ID": TENANT_ID},
+        )
+
+    response = await client.get(
+        f"/v1/denials/{denial_id}/commissioner-letters",
+        headers={"X-Tenant-ID": TENANT_ID},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert data[0]["denial_id"] == denial_id
+
+
+async def test_auto_send_commissioner_on_appeal(client, engine):
+    """When auto_send_commissioner_letter is enabled, generating an appeal
+    should also trigger a commissioner letter."""
+    denial_id, _ = await _create_denial(client, engine)
+
+    mock_appeal = AppealGenResponse(
+        appeal_text="We formally appeal this denial...",
+        case_law_citations=["Hughes v. Blue Cross (1989)"],
+        key_arguments=["Clinical necessity documented"],
+        recommended_attachments=["Radiograph"],
+    )
+    mock_letter = CommLetterGenResponse(
+        letter_text="Dear Commissioner...",
+        commissioner_name="California Department of Insurance",
+        commissioner_address="300 Capitol Mall, Sacramento, CA 95814",
+        case_law_citations=["Hughes v. Blue Cross (1989)"],
+        regulatory_citations=["CA Insurance Code § 10123.135"],
+    )
+
+    with patch("buckteeth.api.denials.AppealGenerator") as MockAppealGen, \
+         patch("buckteeth.api.denials.CommissionerLetterGenerator") as MockCommGen, \
+         patch("buckteeth.api.denials.AUTO_SEND_COMMISSIONER_LETTER", True):
+        MockAppealGen.return_value.generate_appeal = AsyncMock(return_value=mock_appeal)
+        MockCommGen.return_value.generate = AsyncMock(return_value=mock_letter)
+
+        response = await client.post(
+            f"/v1/denials/{denial_id}/generate-appeal",
+            json={
+                "clinical_notes": "Patient has recurrent decay on tooth #14.",
+                "state": "CA",
+            },
+            headers={"X-Tenant-ID": TENANT_ID},
+        )
+
+    assert response.status_code == 201
+
+    # Verify commissioner letter was auto-sent
+    letters_resp = await client.get(
+        f"/v1/denials/{denial_id}/commissioner-letters",
+        headers={"X-Tenant-ID": TENANT_ID},
+    )
+    assert letters_resp.status_code == 200
+    letters = letters_resp.json()
+    assert len(letters) >= 1
+    assert letters[0]["trigger_type"] == "auto"

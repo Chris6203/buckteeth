@@ -26,6 +26,9 @@ from buckteeth.models.claim import Claim, ClaimProcedure
 from buckteeth.models.denial import AppealDocument, CommissionerLetter, DenialRecord
 from buckteeth.models.patient import Patient
 
+# Configurable per-tenant in production; module-level flag for now
+AUTO_SEND_COMMISSIONER_LETTER = False
+
 router = APIRouter(prefix="/v1/denials", tags=["denials"])
 
 
@@ -176,6 +179,52 @@ async def generate_appeal(
 
     await session.flush()
     await session.refresh(appeal_doc)
+
+    # Auto-send commissioner letter if configured
+    if AUTO_SEND_COMMISSIONER_LETTER:
+        comm_request = CommLetterGenRequest(
+            denial_reason_code=denial.denial_reason_code,
+            denial_reason_description=denial.denial_reason_description,
+            denied_amount=denial.denied_amount or 0.0,
+            payer_name=denial.payer_name,
+            patient_name=f"{patient.first_name} {patient.last_name}",
+            patient_address="",  # not available in appeal request
+            provider_name=claim.provider_name,
+            provider_address="",
+            date_of_service=claim.date_of_service,
+            cdt_code=cdt_code,
+            procedure_description=procedure_description,
+            clinical_notes=body.clinical_notes,
+            state=body.state,
+            appeal_already_filed=True,
+        )
+        comm_response = await CommissionerLetterGenerator(api_key="placeholder").generate(comm_request)
+        mail_service = MockMailService()
+        mail_result = await mail_service.send_letter(
+            to_name=comm_response.commissioner_name,
+            to_address_line1=comm_response.commissioner_address,
+            to_city="", to_state=body.state, to_zip="",
+            from_name=claim.provider_name,
+            from_address_line1="", from_city="", from_state=body.state, from_zip="",
+            letter_html=comm_response.letter_text,
+        )
+        commissioner_letter = CommissionerLetter(
+            tenant_id=tenant_id,
+            denial_id=denial_id,
+            patient_id=patient.id,
+            state=body.state,
+            commissioner_name=comm_response.commissioner_name,
+            commissioner_address=comm_response.commissioner_address,
+            letter_text=comm_response.letter_text,
+            case_law_citations=comm_response.case_law_citations,
+            mail_status=mail_result.status,
+            mail_tracking_id=mail_result.mail_id,
+            trigger_type="auto",
+            lob_letter_id=mail_result.mail_id,
+        )
+        session.add(commissioner_letter)
+        await session.flush()
+
     return appeal_doc
 
 
