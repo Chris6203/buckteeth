@@ -291,3 +291,41 @@ class CommissionerLetterAPIResponse(BaseModel):
     trigger_type: str
     created_at: datetime | None = None
     model_config = {"from_attributes": True}
+
+
+# ── PMS Integration ─────────────────────────────────────────────────────
+
+
+class PMSConnectionResponse(BaseModel):
+    connected: bool
+    pms_name: str
+    version: str | None = None
+    last_sync: str | None = None
+
+
+class PMSPatientResponse(BaseModel):
+    external_id: str
+    first_name: str
+    last_name: str
+    date_of_birth: str
+    gender: str
+    primary_payer_name: str | None = None
+    primary_subscriber_id: str | None = None
+
+
+class PMSEncounterResponse(BaseModel):
+    external_id: str
+    patient_external_id: str
+    provider_name: str
+    date_of_service: str
+    procedure_count: int
+    notes: str | None = None
+
+
+class PMSImportPatientRequest(BaseModel):
+    external_id: str
+
+
+class PMSImportEncounterRequest(BaseModel):
+    patient_external_id: str
+    date_of_service: str
