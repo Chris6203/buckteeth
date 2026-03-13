@@ -182,6 +182,18 @@ class ClaimStatusUpdate(BaseModel):
     status: str
 
 
+class RiskAssessmentRequest(BaseModel):
+    last_service_dates: dict[str, str] | None = None
+    patient_age: int = 35
+
+
+class RiskAssessmentResponse(BaseModel):
+    risk_score: int
+    risk_level: str
+    risk_factors: list[str]
+    recommendations: list[str]
+
+
 # ── Submissions ──────────────────────────────────────────────────────────
 
 

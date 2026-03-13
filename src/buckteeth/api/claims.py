@@ -10,7 +10,10 @@ from buckteeth.api.schemas import (
     ClaimCreateRequest,
     ClaimResponse,
     ClaimStatusUpdate,
+    RiskAssessmentRequest,
+    RiskAssessmentResponse,
 )
+from buckteeth.denials.risk_scorer import DenialRiskScorer
 from buckteeth.claims.builder import ClaimBuilder
 from buckteeth.coding.schemas import CodeSuggestion
 from buckteeth.config import settings
@@ -239,3 +242,41 @@ async def update_claim_status(
     )
     claim = result.scalar_one()
     return claim
+
+
+@router.post("/{claim_id}/assess-risk", response_model=RiskAssessmentResponse)
+async def assess_denial_risk(
+    claim_id: uuid.UUID,
+    body: RiskAssessmentRequest,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Claim)
+        .options(selectinload(Claim.procedures))
+        .where(Claim.id == claim_id, Claim.tenant_id == tenant_id)
+    )
+    claim = result.scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    cdt_codes = [p.cdt_code for p in claim.procedures]
+
+    scorer = DenialRiskScorer(api_key=settings.anthropic_api_key)
+    assessment = await scorer.assess(
+        cdt_codes=cdt_codes,
+        payer_name=claim.primary_payer_name,
+        payer_id=claim.primary_payer_id,
+        patient_age=body.patient_age,
+        provider_name=claim.provider_name,
+        date_of_service=claim.date_of_service,
+        clinical_notes=f"Claim for {', '.join(cdt_codes)}",
+        last_service_dates=body.last_service_dates,
+    )
+
+    return RiskAssessmentResponse(
+        risk_score=assessment.risk_score,
+        risk_level=assessment.risk_level,
+        risk_factors=assessment.risk_factors,
+        recommendations=assessment.recommendations,
+    )
