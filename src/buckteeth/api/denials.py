@@ -1,0 +1,307 @@
+import uuid
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from buckteeth.api.deps import get_session, get_tenant_id
+from buckteeth.api.schemas import (
+    AppealDocumentResponse,
+    CommissionerLetterAPIResponse,
+    CreateDenialRequest,
+    DenialResponse,
+    GenerateAppealRequest,
+    SendCommissionerLetterRequest,
+)
+from buckteeth.denials.appeal_generator import AppealGenerator
+from buckteeth.denials.commissioner import CommissionerLetterGenerator
+from buckteeth.denials.mail_service import MockMailService
+from buckteeth.denials.schemas import (
+    AppealRequest as AppealGenRequest,
+    CommissionerLetterRequest as CommLetterGenRequest,
+)
+from buckteeth.models.claim import Claim, ClaimProcedure
+from buckteeth.models.denial import AppealDocument, CommissionerLetter, DenialRecord
+from buckteeth.models.patient import Patient
+
+router = APIRouter(prefix="/v1/denials", tags=["denials"])
+
+
+@router.post("", response_model=DenialResponse, status_code=201)
+async def create_denial(
+    body: CreateDenialRequest,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    # Load and verify claim exists
+    result = await session.execute(
+        select(Claim).where(
+            Claim.id == body.claim_id,
+            Claim.tenant_id == tenant_id,
+        )
+    )
+    claim = result.scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Create denial record
+    denial = DenialRecord(
+        tenant_id=tenant_id,
+        claim_id=body.claim_id,
+        denial_reason_code=body.denial_reason_code,
+        denial_reason_description=body.denial_reason_description,
+        denied_amount=body.denied_amount,
+        payer_name=body.payer_name,
+        status="denied",
+    )
+    session.add(denial)
+
+    # Update claim status
+    claim.status = "denied"
+
+    await session.flush()
+    await session.refresh(denial)
+    return denial
+
+
+@router.get("", response_model=list[DenialResponse])
+async def list_denials(
+    status: Optional[str] = Query(default=None),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    stmt = select(DenialRecord).where(DenialRecord.tenant_id == tenant_id)
+    if status is not None:
+        stmt = stmt.where(DenialRecord.status == status)
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+@router.get("/{denial_id}", response_model=DenialResponse)
+async def get_denial(
+    denial_id: uuid.UUID,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(DenialRecord).where(
+            DenialRecord.id == denial_id,
+            DenialRecord.tenant_id == tenant_id,
+        )
+    )
+    denial = result.scalar_one_or_none()
+    if denial is None:
+        raise HTTPException(status_code=404, detail="Denial not found")
+    return denial
+
+
+@router.post("/{denial_id}/generate-appeal", response_model=AppealDocumentResponse, status_code=201)
+async def generate_appeal(
+    denial_id: uuid.UUID,
+    body: GenerateAppealRequest,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    # Load denial
+    result = await session.execute(
+        select(DenialRecord).where(
+            DenialRecord.id == denial_id,
+            DenialRecord.tenant_id == tenant_id,
+        )
+    )
+    denial = result.scalar_one_or_none()
+    if denial is None:
+        raise HTTPException(status_code=404, detail="Denial not found")
+
+    # Load claim with procedures
+    claim_result = await session.execute(
+        select(Claim)
+        .options(selectinload(Claim.procedures))
+        .where(Claim.id == denial.claim_id)
+    )
+    claim = claim_result.scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Load patient
+    patient_result = await session.execute(
+        select(Patient).where(Patient.id == claim.patient_id)
+    )
+    patient = patient_result.scalar_one_or_none()
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Get CDT code from first procedure or use fallback
+    cdt_code = "D0000"
+    procedure_description = "Dental procedure"
+    if claim.procedures:
+        cdt_code = claim.procedures[0].cdt_code
+        procedure_description = claim.procedures[0].cdt_description
+
+    # Build appeal request
+    appeal_request = AppealGenRequest(
+        denial_reason_code=denial.denial_reason_code,
+        denial_reason_description=denial.denial_reason_description,
+        denied_amount=denial.denied_amount or 0.0,
+        payer_name=denial.payer_name,
+        cdt_code=cdt_code,
+        procedure_description=procedure_description,
+        clinical_notes=body.clinical_notes,
+        patient_name=f"{patient.first_name} {patient.last_name}",
+        date_of_service=claim.date_of_service,
+        provider_name=claim.provider_name,
+        state=body.state,
+    )
+
+    # Generate appeal via AI
+    appeal_response = await AppealGenerator(api_key="placeholder").generate_appeal(appeal_request)
+
+    # Save AppealDocument to DB
+    appeal_doc = AppealDocument(
+        tenant_id=tenant_id,
+        denial_id=denial_id,
+        appeal_text=appeal_response.appeal_text,
+        case_law_citations=appeal_response.case_law_citations,
+        supporting_evidence={"key_arguments": appeal_response.key_arguments,
+                             "recommended_attachments": appeal_response.recommended_attachments},
+        generated_by="ai",
+        status="draft",
+    )
+    session.add(appeal_doc)
+
+    # Update denial status
+    denial.status = "appealed"
+
+    await session.flush()
+    await session.refresh(appeal_doc)
+    return appeal_doc
+
+
+@router.post("/{denial_id}/send-commissioner-letter", response_model=CommissionerLetterAPIResponse, status_code=201)
+async def send_commissioner_letter(
+    denial_id: uuid.UUID,
+    body: SendCommissionerLetterRequest,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    # Load denial
+    result = await session.execute(
+        select(DenialRecord).where(
+            DenialRecord.id == denial_id,
+            DenialRecord.tenant_id == tenant_id,
+        )
+    )
+    denial = result.scalar_one_or_none()
+    if denial is None:
+        raise HTTPException(status_code=404, detail="Denial not found")
+
+    # Load claim with procedures
+    claim_result = await session.execute(
+        select(Claim)
+        .options(selectinload(Claim.procedures))
+        .where(Claim.id == denial.claim_id)
+    )
+    claim = claim_result.scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Load patient
+    patient_result = await session.execute(
+        select(Patient).where(Patient.id == claim.patient_id)
+    )
+    patient = patient_result.scalar_one_or_none()
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Get CDT code from first procedure or use fallback
+    cdt_code = "D0000"
+    procedure_description = "Dental procedure"
+    if claim.procedures:
+        cdt_code = claim.procedures[0].cdt_code
+        procedure_description = claim.procedures[0].cdt_description
+
+    # Build commissioner letter request
+    letter_request = CommLetterGenRequest(
+        denial_reason_code=denial.denial_reason_code,
+        denial_reason_description=denial.denial_reason_description,
+        denied_amount=denial.denied_amount or 0.0,
+        payer_name=denial.payer_name,
+        patient_name=f"{patient.first_name} {patient.last_name}",
+        patient_address=body.patient_address,
+        provider_name=claim.provider_name,
+        provider_address=body.provider_address,
+        date_of_service=claim.date_of_service,
+        cdt_code=cdt_code,
+        procedure_description=procedure_description,
+        clinical_notes=body.clinical_notes,
+        state=body.state,
+        appeal_already_filed=True,
+    )
+
+    # Generate commissioner letter via AI
+    letter_response = await CommissionerLetterGenerator(api_key="placeholder").generate(letter_request)
+
+    # Send via mail service
+    mail_service = MockMailService()
+    mail_result = await mail_service.send_letter(
+        to_name=letter_response.commissioner_name,
+        to_address_line1=letter_response.commissioner_address,
+        to_city="",
+        to_state=body.state,
+        to_zip="",
+        from_name=claim.provider_name,
+        from_address_line1=body.provider_address,
+        from_city="",
+        from_state=body.state,
+        from_zip="",
+        letter_html=letter_response.letter_text,
+    )
+
+    # Save CommissionerLetter to DB
+    commissioner_letter = CommissionerLetter(
+        tenant_id=tenant_id,
+        denial_id=denial_id,
+        patient_id=patient.id,
+        state=body.state,
+        commissioner_name=letter_response.commissioner_name,
+        commissioner_address=letter_response.commissioner_address,
+        letter_text=letter_response.letter_text,
+        case_law_citations=letter_response.case_law_citations,
+        mail_status=mail_result.status,
+        mail_tracking_id=mail_result.mail_id,
+        trigger_type="manual",
+        lob_letter_id=mail_result.mail_id,
+    )
+    session.add(commissioner_letter)
+
+    await session.flush()
+    await session.refresh(commissioner_letter)
+    return commissioner_letter
+
+
+@router.get("/{denial_id}/commissioner-letters", response_model=list[CommissionerLetterAPIResponse])
+async def list_commissioner_letters(
+    denial_id: uuid.UUID,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    # Verify denial exists
+    denial_result = await session.execute(
+        select(DenialRecord).where(
+            DenialRecord.id == denial_id,
+            DenialRecord.tenant_id == tenant_id,
+        )
+    )
+    denial = denial_result.scalar_one_or_none()
+    if denial is None:
+        raise HTTPException(status_code=404, detail="Denial not found")
+
+    result = await session.execute(
+        select(CommissionerLetter).where(
+            CommissionerLetter.denial_id == denial_id,
+            CommissionerLetter.tenant_id == tenant_id,
+        )
+    )
+    return result.scalars().all()

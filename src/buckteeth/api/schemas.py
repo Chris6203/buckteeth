@@ -207,3 +207,62 @@ class EligibilityCheckResponse(BaseModel):
     annual_remaining: float | None = None
     deductible: float | None = None
     deductible_met: float | None = None
+
+
+# ── Denials ──────────────────────────────────────────────────────────────
+
+
+class CreateDenialRequest(BaseModel):
+    claim_id: uuid.UUID
+    denial_reason_code: str
+    denial_reason_description: str
+    denied_amount: float
+    payer_name: str
+
+
+class DenialResponse(BaseModel):
+    id: uuid.UUID
+    claim_id: uuid.UUID
+    denial_reason_code: str
+    denial_reason_description: str
+    denied_amount: float | None
+    payer_name: str
+    status: str
+    created_at: datetime | None = None
+    model_config = {"from_attributes": True}
+
+
+class GenerateAppealRequest(BaseModel):
+    clinical_notes: str
+    state: str = "CA"
+
+
+class AppealDocumentResponse(BaseModel):
+    id: uuid.UUID
+    denial_id: uuid.UUID
+    appeal_text: str
+    case_law_citations: Any | None = None
+    generated_by: str
+    status: str
+    created_at: datetime | None = None
+    model_config = {"from_attributes": True}
+
+
+class SendCommissionerLetterRequest(BaseModel):
+    patient_address: str
+    provider_address: str
+    clinical_notes: str
+    state: str
+
+
+class CommissionerLetterAPIResponse(BaseModel):
+    id: uuid.UUID
+    denial_id: uuid.UUID
+    state: str
+    commissioner_name: str
+    letter_text: str
+    mail_status: str
+    mail_tracking_id: str | None = None
+    trigger_type: str
+    created_at: datetime | None = None
+    model_config = {"from_attributes": True}

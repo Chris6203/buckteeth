@@ -5,6 +5,7 @@ from buckteeth.api.encounters import router as encounters_router
 from buckteeth.api.claims import router as claims_router
 from buckteeth.api.coding import router as coding_router
 from buckteeth.api.submissions import router as submissions_router
+from buckteeth.api.denials import router as denials_router
 
 app = FastAPI(
     title="Buckteeth",
@@ -17,6 +18,7 @@ app.include_router(encounters_router)
 app.include_router(coding_router)
 app.include_router(claims_router)
 app.include_router(submissions_router)
+app.include_router(denials_router)
 
 
 @app.get("/health")
