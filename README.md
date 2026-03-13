@@ -101,6 +101,12 @@ src/buckteeth/
 ├── forms/               # ADA claim form PDF generation
 ├── pms/                 # Practice management system adapters
 └── knowledge/           # CDT codes, payer rules, case law
+
+frontend/                    # React dashboard (Vite + TypeScript + Tailwind)
+├── src/
+│   ├── api/             # Typed API client
+│   ├── components/      # Layout, StatusBadge
+│   └── pages/           # Dashboard, Patients, Claims, Denials
 ```
 
 ## Documentation
@@ -112,6 +118,7 @@ src/buckteeth/
 - [Phase 4 Plan: Denial Management](docs/superpowers/plans/2026-03-12-phase4-denial-management.md)
 - [Phase 5 Plan: Advanced Ingestion & Risk](docs/superpowers/plans/2026-03-12-phase5-advanced-ingestion-risk.md)
 - [Phase 6 Plan: PMS Adapters](docs/superpowers/plans/2026-03-13-phase6-pms-adapters.md)
+- [Phase 7 Plan: React Dashboard](docs/superpowers/plans/2026-03-13-phase7-react-dashboard.md)
 
 ## License
 
