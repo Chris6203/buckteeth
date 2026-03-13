@@ -97,7 +97,8 @@ src/buckteeth/
 ├── coding/              # AI coding engine
 ├── claims/              # Claim building and narratives
 ├── submission/          # Clearinghouse adapters and gateway
-├── denials/             # Appeals, commissioner letters, mail
+├── denials/             # Appeals, commissioner letters, mail, risk scoring
+├── forms/               # ADA claim form PDF generation
 └── knowledge/           # CDT codes, payer rules, case law
 ```
 
@@ -108,6 +109,7 @@ src/buckteeth/
 - [Phase 2 Plan: Claim Builder](docs/superpowers/plans/2026-03-12-phase2-claim-builder.md)
 - [Phase 3 Plan: Submission Gateway](docs/superpowers/plans/2026-03-12-phase3-submission-gateway.md)
 - [Phase 4 Plan: Denial Management](docs/superpowers/plans/2026-03-12-phase4-denial-management.md)
+- [Phase 5 Plan: Advanced Ingestion & Risk](docs/superpowers/plans/2026-03-12-phase5-advanced-ingestion-risk.md)
 
 ## License
 
