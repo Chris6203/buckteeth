@@ -23,36 +23,38 @@ Buckteeth takes clinical input in any form — structured data, free-text notes,
 
 ## Tech Stack
 
-- **Backend:** Python (FastAPI)
-- **Frontend:** React (TypeScript)
-- **Database:** PostgreSQL
-- **AI:** Claude (Anthropic)
-- **Auth:** AWS Cognito
-- **Deployment:** Docker / AWS ECS
+- **Backend:** Python 3.11+ (FastAPI, SQLAlchemy 2.0 async, Pydantic v2)
+- **Frontend:** React 18 (TypeScript, Vite, Tailwind CSS, React Router v6)
+- **Database:** PostgreSQL 15+ (async via asyncpg; SQLite for tests)
+- **AI:** Claude (Anthropic SDK) — coding suggestions, appeal generation, risk assessment
+- **PDF:** ReportLab (ADA dental claim forms)
+- **Auth:** AWS Cognito (planned)
+- **Deployment:** Docker / AWS ECS (planned)
 
 ## Architecture
 
-Modular monolith with clear module boundaries:
+Modular monolith with clear module boundaries and multi-tenant row-level isolation:
 
 | Module | Purpose |
 |--------|---------|
-| Ingestion | Normalize clinical input (text, voice, images) |
-| Coding Engine | AI-powered CDT/ICD-10 code selection with RAG |
-| Claim Builder | Assemble claims with narratives and attachments |
-| Submission Gateway | Route claims to clearinghouses |
-| Denial Management | Predict denials, generate appeals, commissioner complaint letters |
-| PMS Adapters | Integrate with practice management systems |
-| Dashboard | Revenue cycle UI for dentists and front desk |
+| Ingestion | Normalize clinical input (text, voice, images) via Claude Vision + transcription |
+| Coding Engine | AI-powered CDT/ICD-10 code selection with RAG from CDT knowledge base |
+| Claim Builder | Assemble claims with AI-generated payer-specific narratives |
+| Submission Gateway | Route claims to clearinghouses with idempotent retry |
+| Denial Management | Predict denials, generate appeals citing case law, send commissioner letters |
+| PMS Adapters | Integrate with practice management systems (Open Dental, CSV import/export) |
+| Dashboard | React SPA for patients, claims, denials, and revenue cycle overview |
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.11+
-- PostgreSQL 15+
+- Node.js 18+ and npm
+- PostgreSQL 15+ (or SQLite for development)
 - An Anthropic API key
 
-### Setup
+### Backend Setup
 
 ```bash
 # Clone the repo
@@ -73,41 +75,172 @@ cp .env.example .env
 # Run database migrations
 alembic upgrade head
 
-# Start the server
+# Start the backend server
 uvicorn buckteeth.main:app --reload
 ```
+
+The API server runs at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
+
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start the dev server
+npm run dev
+```
+
+The frontend runs at `http://localhost:5173` and proxies API requests to the backend.
 
 ### Running Tests
 
 ```bash
+# Backend tests (138 tests)
 pytest tests/ -v
+
+# Frontend tests (13 tests)
+cd frontend && npm test
 ```
+
+## API Endpoints
+
+31 REST endpoints across 7 modules, all under the `/v1` prefix:
+
+### Patients (`/v1/patients`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/patients` | Create a patient |
+| GET | `/v1/patients` | List all patients |
+| GET | `/v1/patients/{id}` | Get a patient |
+
+### Encounters (`/v1/encounters`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/encounters/from-notes` | Parse clinical notes into structured encounter |
+| POST | `/v1/encounters/from-image` | Analyze x-ray/photo via Claude Vision |
+| POST | `/v1/encounters/from-voice` | Transcribe audio and parse encounter |
+| GET | `/v1/encounters/{id}` | Get an encounter |
+
+### Coding (`/v1/encounters`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/encounters/{id}/code` | AI-suggest CDT codes for encounter |
+| GET | `/v1/encounters/{id}/coded` | Get coded encounter |
+| POST | `/v1/encounters/{id}/coded/approve` | Approve AI-suggested codes |
+
+### Claims (`/v1/claims`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/claims` | Build claim from coded encounter |
+| GET | `/v1/claims` | List claims (filterable by status) |
+| GET | `/v1/claims/{id}` | Get a claim with procedures and narratives |
+| PUT | `/v1/claims/{id}/status` | Update claim status |
+| POST | `/v1/claims/{id}/assess-risk` | AI denial risk assessment |
+| GET | `/v1/claims/{id}/pdf` | Download ADA claim form PDF |
+
+### Submissions (`/v1/submissions`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/submissions/submit` | Submit claim to clearinghouse |
+| POST | `/v1/submissions/batch-submit` | Batch submit multiple claims |
+| GET | `/v1/submissions` | List submissions |
+| GET | `/v1/submissions/{id}` | Get submission status |
+| POST | `/v1/submissions/eligibility` | Check patient insurance eligibility |
+
+### Denials (`/v1/denials`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/denials` | Record a denial |
+| GET | `/v1/denials` | List denials (filterable by status) |
+| GET | `/v1/denials/{id}` | Get a denial |
+| POST | `/v1/denials/{id}/generate-appeal` | AI-generate appeal letter with case law |
+| POST | `/v1/denials/{id}/send-commissioner-letter` | Generate and mail commissioner complaint |
+| GET | `/v1/denials/{id}/commissioner-letters` | List commissioner letters for a denial |
+
+### PMS Integration (`/v1/pms`)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/v1/pms/status` | Check PMS connection status |
+| GET | `/v1/pms/patients` | List patients from PMS |
+| GET | `/v1/pms/patients/{id}/encounters` | Get treatment history from PMS |
+| POST | `/v1/pms/import-patient` | Import patient from PMS into Buckteeth |
+| POST | `/v1/pms/import-encounter` | Import encounter from PMS into Buckteeth |
 
 ## Project Structure
 
 ```
 src/buckteeth/
-├── main.py              # FastAPI app entrypoint
-├── config.py            # Settings
-├── database.py          # DB engine and session
+├── main.py              # FastAPI app entrypoint + CORS
+├── config.py            # Settings (Pydantic)
+├── database.py          # Async SQLAlchemy engine and session
 ├── tenant.py            # Multi-tenant context
-├── models/              # SQLAlchemy models
-├── api/                 # REST API endpoints
-├── ingestion/           # Clinical input parsing
-├── coding/              # AI coding engine
-├── claims/              # Claim building and narratives
-├── submission/          # Clearinghouse adapters and gateway
-├── denials/             # Appeals, commissioner letters, mail, risk scoring
-├── forms/               # ADA claim form PDF generation
-├── pms/                 # Practice management system adapters
-└── knowledge/           # CDT codes, payer rules, case law
+├── models/              # SQLAlchemy models (patient, encounter, claim, denial, etc.)
+├── api/                 # REST API routers and Pydantic schemas
+│   ├── deps.py          # Shared dependencies (tenant, session)
+│   ├── schemas.py       # All request/response schemas
+│   ├── patients.py      # Patient CRUD
+│   ├── encounters.py    # Encounter parsing (text, image, voice)
+│   ├── coding.py        # AI coding engine endpoints
+│   ├── claims.py        # Claim building, risk assessment, PDF
+│   ├── submissions.py   # Clearinghouse submission
+│   ├── denials.py       # Appeals, commissioner letters
+│   └── pms.py           # PMS sync endpoints
+├── ingestion/           # Clinical input parsing + image analysis + transcription
+├── coding/              # AI coding engine with CDT knowledge base
+├── claims/              # Claim narrative generation
+├── submission/          # Clearinghouse adapter pattern + gateway
+├── denials/             # Appeal generator, commissioner letters, mail service, risk scorer
+├── forms/               # ADA dental claim form PDF generation (ReportLab)
+├── pms/                 # PMS adapters (Mock, Open Dental, CSV)
+└── knowledge/           # CDT codes, payer rules, case law repository
 
-frontend/                    # React dashboard (Vite + TypeScript + Tailwind)
+frontend/
 ├── src/
-│   ├── api/             # Typed API client
-│   ├── components/      # Layout, StatusBadge
-│   └── pages/           # Dashboard, Patients, Claims, Denials
+│   ├── api/             # Typed fetch client + TypeScript interfaces
+│   │   ├── client.ts    # API functions for all 31 endpoints
+│   │   └── types.ts     # TypeScript types matching backend schemas
+│   ├── components/      # Shared UI components
+│   │   ├── Layout.tsx   # Sidebar navigation shell
+│   │   └── StatusBadge.tsx  # Color-coded status pill
+│   ├── pages/           # Route pages
+│   │   ├── Dashboard.tsx    # Summary cards + API health
+│   │   ├── Patients.tsx     # Patient list + create form
+│   │   ├── Claims.tsx       # Claims with status filtering + risk assessment
+│   │   └── Denials.tsx      # Denials list + AI appeal generation
+│   └── __tests__/       # Vitest + React Testing Library tests
+├── index.html
+├── vite.config.ts       # Vite config with API proxy + Vitest
+├── tailwind.config.js
+└── package.json
+
+tests/                   # Backend tests (pytest, async)
+├── conftest.py          # Shared fixtures (engine, db_session)
+├── api/                 # API integration tests
+├── models/              # Model unit tests
+├── ingestion/           # Ingestion tests
+├── coding/              # Coding engine tests
+├── claims/              # Claims tests
+├── submission/          # Submission tests
+├── denials/             # Denial management tests
+├── forms/               # PDF generation tests
+├── pms/                 # PMS adapter tests
+└── knowledge/           # Knowledge base tests
 ```
+
+## Implementation Phases
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Foundation — models, multi-tenancy, patient/encounter APIs | Done |
+| 2 | Claim Builder — AI narratives, claim assembly | Done |
+| 3 | Submission Gateway — clearinghouse adapters, eligibility | Done |
+| 4 | Denial Management — appeals, commissioner letters, mail | Done |
+| 5 | Advanced Ingestion & Risk — image analysis, voice, risk scoring, PDF forms | Done |
+| 6 | PMS Adapters — Open Dental, CSV import/export, sync API | Done |
+| 7 | React Dashboard — frontend with patients, claims, denials pages | Done |
 
 ## Documentation
 
