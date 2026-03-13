@@ -1,11 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from buckteeth.api.deps import get_session, get_tenant_id
+from buckteeth.forms.ada_claim import ADAClaimFormGenerator, ClaimFormData, ProcedureLineItem
 from buckteeth.api.schemas import (
     ClaimCreateRequest,
     ClaimResponse,
@@ -279,4 +281,67 @@ async def assess_denial_risk(
         risk_level=assessment.risk_level,
         risk_factors=assessment.risk_factors,
         recommendations=assessment.recommendations,
+    )
+
+
+@router.get("/{claim_id}/pdf")
+async def download_claim_pdf(
+    claim_id: uuid.UUID,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Claim)
+        .options(selectinload(Claim.procedures))
+        .where(Claim.id == claim_id, Claim.tenant_id == tenant_id)
+    )
+    claim = result.scalar_one_or_none()
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Load patient
+    patient_result = await session.execute(
+        select(Patient).where(Patient.id == claim.patient_id)
+    )
+    patient = patient_result.scalar_one_or_none()
+
+    procedure_lines = []
+    for i, proc in enumerate(claim.procedures, 1):
+        procedure_lines.append(ProcedureLineItem(
+            line_number=i,
+            cdt_code=proc.cdt_code,
+            tooth_number=proc.tooth_number or "",
+            surfaces=proc.surfaces or "",
+            description=proc.cdt_description,
+            fee=proc.fee_submitted or 0.0,
+        ))
+
+    form_data = ClaimFormData(
+        patient_name=f"{patient.first_name} {patient.last_name}" if patient else "Unknown",
+        patient_dob=patient.date_of_birth if patient else "",
+        patient_address="",
+        patient_gender=patient.gender if patient else "",
+        subscriber_name=f"{patient.first_name} {patient.last_name}" if patient else "",
+        subscriber_id=claim.primary_subscriber_id,
+        group_number=claim.primary_group_number,
+        payer_name=claim.primary_payer_name,
+        payer_address="",
+        provider_name=claim.provider_name,
+        provider_npi="",
+        provider_license="",
+        provider_address="",
+        provider_tax_id="",
+        date_of_service=claim.date_of_service,
+        procedures=procedure_lines,
+        total_fee=claim.total_fee_submitted or 0.0,
+        preauth_number=claim.preauth_number,
+    )
+
+    generator = ADAClaimFormGenerator()
+    pdf_bytes = generator.generate(form_data)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=claim-{claim_id}.pdf"},
     )

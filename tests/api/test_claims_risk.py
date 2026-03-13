@@ -186,3 +186,16 @@ async def test_assess_risk_claim_not_found(client):
         headers={"X-Tenant-ID": TENANT_ID},
     )
     assert response.status_code == 404
+
+
+async def test_download_claim_pdf(client, engine):
+    claim_id = await _create_claim(client, engine)
+
+    response = await client.get(
+        f"/v1/claims/{claim_id}/pdf",
+        headers={"X-Tenant-ID": TENANT_ID},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content[:4] == b"%PDF"
