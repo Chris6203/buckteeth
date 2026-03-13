@@ -12,8 +12,9 @@ Buckteeth takes clinical input in any form — structured data, free-text notes,
 4. **Builds** complete insurance claims with narratives and attachments
 5. **Submits** claims through clearinghouses or generates ADA dental claim forms
 6. **Predicts** denial risk before submission and suggests proactive fixes
-7. **Manages** denials with AI-generated appeal letters
-8. **Tracks** the full revenue cycle from coding through payment posting
+7. **Manages** denials with AI-generated appeal letters citing case law
+8. **Sends** formal complaint letters to state insurance commissioners via physical mail
+9. **Tracks** the full revenue cycle from coding through payment posting
 
 ## Who It's For
 
@@ -39,7 +40,7 @@ Modular monolith with clear module boundaries:
 | Coding Engine | AI-powered CDT/ICD-10 code selection with RAG |
 | Claim Builder | Assemble claims with narratives and attachments |
 | Submission Gateway | Route claims to clearinghouses |
-| Denial Management | Predict denials, generate appeals |
+| Denial Management | Predict denials, generate appeals, commissioner complaint letters |
 | PMS Adapters | Integrate with practice management systems |
 | Dashboard | Revenue cycle UI for dentists and front desk |
 
@@ -47,7 +48,7 @@ Modular monolith with clear module boundaries:
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - PostgreSQL 15+
 - An Anthropic API key
 
@@ -55,7 +56,7 @@ Modular monolith with clear module boundaries:
 
 ```bash
 # Clone the repo
-git clone https://github.com/<your-username>/buckteeth.git
+git clone https://github.com/Chris6203/buckteeth.git
 cd buckteeth
 
 # Create virtual environment
@@ -94,13 +95,19 @@ src/buckteeth/
 ├── api/                 # REST API endpoints
 ├── ingestion/           # Clinical input parsing
 ├── coding/              # AI coding engine
-└── knowledge/           # CDT codes and payer rules
+├── claims/              # Claim building and narratives
+├── submission/          # Clearinghouse adapters and gateway
+├── denials/             # Appeals, commissioner letters, mail
+└── knowledge/           # CDT codes, payer rules, case law
 ```
 
 ## Documentation
 
 - [Design Spec](docs/superpowers/specs/2026-03-12-dental-coding-agent-design.md)
-- [Phase 1 Implementation Plan](docs/superpowers/plans/2026-03-12-phase1-foundation.md)
+- [Phase 1 Plan: Foundation](docs/superpowers/plans/2026-03-12-phase1-foundation.md)
+- [Phase 2 Plan: Claim Builder](docs/superpowers/plans/2026-03-12-phase2-claim-builder.md)
+- [Phase 3 Plan: Submission Gateway](docs/superpowers/plans/2026-03-12-phase3-submission-gateway.md)
+- [Phase 4 Plan: Denial Management](docs/superpowers/plans/2026-03-12-phase4-denial-management.md)
 
 ## License
 
