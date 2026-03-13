@@ -80,6 +80,19 @@ class EncounterResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class EncounterFromImageRequest(BaseModel):
+    patient_id: uuid.UUID
+    provider_name: str
+    date_of_service: str
+    context: str | None = None
+
+
+class EncounterFromVoiceRequest(BaseModel):
+    patient_id: uuid.UUID
+    provider_name: str
+    date_of_service: str
+
+
 # ── Coding ───────────────────────────────────────────────────────────────
 
 
