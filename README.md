@@ -99,6 +99,7 @@ src/buckteeth/
 ├── submission/          # Clearinghouse adapters and gateway
 ├── denials/             # Appeals, commissioner letters, mail, risk scoring
 ├── forms/               # ADA claim form PDF generation
+├── pms/                 # Practice management system adapters
 └── knowledge/           # CDT codes, payer rules, case law
 ```
 
@@ -110,6 +111,7 @@ src/buckteeth/
 - [Phase 3 Plan: Submission Gateway](docs/superpowers/plans/2026-03-12-phase3-submission-gateway.md)
 - [Phase 4 Plan: Denial Management](docs/superpowers/plans/2026-03-12-phase4-denial-management.md)
 - [Phase 5 Plan: Advanced Ingestion & Risk](docs/superpowers/plans/2026-03-12-phase5-advanced-ingestion-risk.md)
+- [Phase 6 Plan: PMS Adapters](docs/superpowers/plans/2026-03-13-phase6-pms-adapters.md)
 
 ## License
 
