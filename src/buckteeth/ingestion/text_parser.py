@@ -38,6 +38,12 @@ Return your response as JSON with the following structure:
 
 Rules:
 - "procedures" is always an array (may be empty if no procedures found).
+- IMPORTANT: Each billable procedure must be a SEPARATE entry. For example, \
+  "crown prep with core buildup" should be TWO procedures: one for the core \
+  buildup and one for the crown preparation. Similarly, "prophy and BWX" \
+  should be TWO procedures. Each line item on an insurance claim is a separate procedure.
+- Common procedure splits: crown + core buildup, extraction + bone graft, \
+  evaluation + radiographs, prophy + fluoride, SRP + irrigation.
 - "tooth_numbers", "surfaces", "quadrant", and "diagnosis" are optional (use null if not applicable).
 - Surface abbreviations should be single uppercase letters: M, O, D, L, B, F, I.
 - Return ONLY valid JSON. No additional text or explanation.

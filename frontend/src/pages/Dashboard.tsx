@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listPatients, listClaims, listDenials, health } from "../api/client";
 import type { Claim, Denial } from "../api/types";
+import { formatDate } from "../utils";
 
 interface Stats {
   patients: number;
@@ -219,7 +220,7 @@ export default function Dashboard() {
                         : "--"}
                     </span>
                     <span className="text-xs font-body text-gray-600">
-                      {claim.date_of_service}
+                      {formatDate(claim.date_of_service)}
                     </span>
                   </div>
                 </Link>

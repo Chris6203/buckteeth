@@ -25,9 +25,16 @@ CDT coding rules:
 - Posterior teeth: 1-5, 12-16 (upper) and 17-21, 28-32 (lower).
 - Surface abbreviations: M=mesial, O=occlusal, D=distal, B=buccal/facial, \
   L=lingual. Count unique surfaces for composite codes.
-- Crowns are coded by material (ceramic, PFM, full cast metal).
+- Crowns: D2740 = all-ceramic/porcelain (most common), D2750 = porcelain fused to \
+  high noble metal (PFM), D2751 = PFM base metal. Default to D2740 for "crown prep" \
+  unless the material is specifically mentioned.
+- Core buildup is D2950. Always code separately from the crown.
 - Prophylaxis: D1110 for adults (14+), D1120 for children (<14).
-- SRP is coded per quadrant, by tooth count (1-3 teeth vs 4+ teeth).
+- SRP is coded per quadrant, by tooth count (1-3 teeth = D4342, 4+ teeth = D4341).
+- Root canal: D3310 anterior, D3320 premolar, D3330 molar. Code by tooth type.
+- Only suggest codes that are the BEST match. Assign confidence 85-100 for \
+  clear matches, 60-84 for likely matches, below 60 for alternatives.
+- You may suggest codes NOT in the candidate list if you are confident they are correct.
 
 Respond ONLY with valid JSON in this format:
 {
@@ -81,8 +88,11 @@ class CDTCodeSelector:
             messages=[{"role": "user", "content": user_message}],
         )
 
+        import re
         raw = response.content[0].text
-        data = json.loads(raw)
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", raw.strip())
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+        data = json.loads(cleaned)
 
         return [
             CodeSuggestion(**s)

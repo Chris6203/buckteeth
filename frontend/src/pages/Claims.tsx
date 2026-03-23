@@ -1,7 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import { listClaims, submitClaim, assessRisk, listPatients } from "../api/client";
+import { listClaims, submitClaim, assessRisk, listPatients, updateClaimStatus } from "../api/client";
 import type { Claim, Patient, RiskAssessment } from "../api/types";
+import { formatDate } from "../utils";
 import StatusBadge from "../components/StatusBadge";
+import { useToast } from "../components/Toast";
+
+const CLAIM_STATUSES = ["draft", "ready", "submitted", "accepted", "denied", "paid"];
 
 const STATUS_FILTERS = [
   "all",
@@ -25,6 +29,7 @@ function formatDollars(amount: number): string {
 }
 
 export default function Claims() {
+  const { addToast } = useToast();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +102,34 @@ export default function Claims() {
       setRiskResult({ claimId, assessment });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to assess risk");
+    }
+  }
+
+  async function handleDownloadPdf(claimId: string) {
+    try {
+      const res = await fetch(`/bt/v1/claims/${claimId}/pdf`, {
+        headers: { "X-Tenant-ID": localStorage.getItem("tenantId") ?? "00000000-0000-0000-0000-000000000001" },
+      });
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `claim-${claimId.slice(0, 8)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to download PDF");
+    }
+  }
+
+  async function handleStatusChange(claimId: string, newStatus: string) {
+    try {
+      await updateClaimStatus(claimId, newStatus);
+      await loadClaims();
+      addToast("success", `Claim status updated to ${newStatus}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update status");
     }
   }
 
@@ -248,15 +281,13 @@ export default function Claims() {
                         {c.provider_name}
                       </td>
                       <td className="table-cell text-gray-400">
-                        {c.date_of_service}
+                        {formatDate(c.date_of_service)}
                       </td>
                       <td className="table-cell text-gray-400">
                         {c.primary_payer_name}
                       </td>
                       <td className="table-cell text-gray-400">
-                        {c.total_fee_submitted
-                          ? formatDollars(c.total_fee_submitted)
-                          : "\u2014"}
+                        {formatDollars(c.total_fee_submitted ?? 0)}
                       </td>
                       <td className="table-cell">
                         <StatusBadge status={c.status} />
@@ -280,33 +311,60 @@ export default function Claims() {
                         </div>
                       </td>
                     </tr>
-                    {expandedId === c.id && c.procedures.length > 0 && (
+                    {expandedId === c.id && (
                       <tr key={`${c.id}-procedures`}>
                         <td colSpan={7} className="px-4 py-3 bg-navy-900/50">
-                          <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                            Procedures
-                          </div>
-                          <div className="space-y-1">
-                            {c.procedures.map((p) => (
-                              <div
-                                key={p.id}
-                                className="flex items-center justify-between text-sm font-body py-1.5 px-3 rounded-lg bg-white/[0.02]"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="font-mono text-cyan font-medium text-xs bg-cyan/10 px-2 py-0.5 rounded">
-                                    {p.cdt_code}
-                                  </span>
-                                  <span className="text-gray-300">
-                                    {p.cdt_description}
-                                  </span>
-                                </div>
-                                <span className="text-gray-400 font-medium">
-                                  {p.fee_submitted != null
-                                    ? formatDollars(p.fee_submitted)
-                                    : "\u2014"}
-                                </span>
+                          {c.procedures.length > 0 && (
+                            <>
+                              <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                                Procedures
                               </div>
-                            ))}
+                              <div className="space-y-1">
+                                {c.procedures.map((p) => (
+                                  <div
+                                    key={p.id}
+                                    className="flex items-center justify-between text-sm font-body py-1.5 px-3 rounded-lg bg-white/[0.02]"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-mono text-cyan font-medium text-xs bg-cyan/10 px-2 py-0.5 rounded">
+                                        {p.cdt_code}
+                                      </span>
+                                      <span className="text-gray-300">
+                                        {p.cdt_description}
+                                      </span>
+                                    </div>
+                                    <span className="text-gray-400 font-medium">
+                                      {formatDollars(p.fee_submitted ?? 0)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06]">
+                            <button
+                              onClick={() => handleDownloadPdf(c.id)}
+                              className="btn-secondary inline-flex items-center gap-1.5 text-sm px-3 py-1.5"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                              </svg>
+                              Download PDF
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs font-heading font-semibold text-gray-500">Status:</label>
+                              <select
+                                value={c.status}
+                                onChange={(e) => handleStatusChange(c.id, e.target.value)}
+                                className="input-field text-xs py-1 px-2"
+                              >
+                                {CLAIM_STATUSES.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -334,36 +392,63 @@ export default function Claims() {
                   <div className="flex items-center justify-between text-sm font-body mb-1">
                     <span className="text-gray-400">{getPatientName(c.patient_id)}</span>
                     <span className="text-gray-300 font-medium">
-                      {c.total_fee_submitted
-                        ? formatDollars(c.total_fee_submitted)
-                        : "\u2014"}
+                      {formatDollars(c.total_fee_submitted ?? 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-body text-gray-500">
-                    <span>{c.date_of_service}</span>
+                    <span>{formatDate(c.date_of_service)}</span>
                     <span>{c.primary_payer_name}</span>
                   </div>
                 </div>
 
                 {/* Expanded procedures */}
-                {expandedId === c.id && c.procedures.length > 0 && (
+                {expandedId === c.id && (
                   <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
-                    <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider">
-                      Procedures
-                    </div>
-                    {c.procedures.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between text-sm font-body py-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono text-cyan text-xs bg-cyan/10 px-1.5 py-0.5 rounded shrink-0">
-                            {p.cdt_code}
-                          </span>
-                          <span className="text-gray-400 truncate">{p.cdt_description}</span>
+                    {c.procedures.length > 0 && (
+                      <>
+                        <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider">
+                          Procedures
                         </div>
-                        <span className="text-gray-300 font-medium shrink-0 ml-2">
-                          {p.fee_submitted != null ? formatDollars(p.fee_submitted) : "\u2014"}
-                        </span>
+                        {c.procedures.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between text-sm font-body py-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-cyan text-xs bg-cyan/10 px-1.5 py-0.5 rounded shrink-0">
+                                {p.cdt_code}
+                              </span>
+                              <span className="text-gray-400 truncate">{p.cdt_description}</span>
+                            </div>
+                            <span className="text-gray-300 font-medium shrink-0 ml-2">
+                              {formatDollars(p.fee_submitted ?? 0)}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/[0.06]">
+                      <button
+                        onClick={() => handleDownloadPdf(c.id)}
+                        className="btn-secondary inline-flex items-center gap-1.5 text-sm px-3 py-1.5"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        PDF
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-heading font-semibold text-gray-500">Status:</label>
+                        <select
+                          value={c.status}
+                          onChange={(e) => handleStatusChange(c.id, e.target.value)}
+                          className="input-field text-xs py-1 px-2"
+                        >
+                          {CLAIM_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
 

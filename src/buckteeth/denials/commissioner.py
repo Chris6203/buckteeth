@@ -7,6 +7,7 @@ case law and regulatory references to challenge improper insurance claim denials
 from __future__ import annotations
 
 import json
+import re
 
 import anthropic
 
@@ -122,7 +123,9 @@ class CommissionerLetterGenerator:
 
         # 4. Parse response
         raw_text = response.content[0].text
-        data = json.loads(raw_text)
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", raw_text.strip())
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+        data = json.loads(cleaned)
 
         return CommissionerLetterResponse(
             letter_text=data["letter_text"],

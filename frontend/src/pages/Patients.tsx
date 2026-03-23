@@ -7,11 +7,13 @@ import {
   deleteInsurancePlan,
 } from "../api/client";
 import type { Patient, PatientCreate, InsurancePlanCreate } from "../api/types";
+import { formatDate } from "../utils";
 import ToothChart from "../components/ToothChart";
 import BenefitsEntry, {
   DEFAULT_BENEFITS,
   type BenefitsData,
 } from "../components/BenefitsEntry";
+import { useToast } from "../components/Toast";
 
 const AVATAR_COLORS = [
   "bg-cyan/20 text-cyan",
@@ -86,6 +88,7 @@ export default function Patients() {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showInsuranceForm, setShowInsuranceForm] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const [missingTeeth, setMissingTeeth] = useLocalStorageState<Record<string, string>>(
     expandedId ? `pp_patient_${expandedId}_teeth` : null,
@@ -118,6 +121,7 @@ export default function Patients() {
       await createPatient(data);
       setShowForm(false);
       await loadPatients();
+      addToast("success", "Patient created");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create patient",
@@ -130,6 +134,7 @@ export default function Patients() {
       await addInsurancePlan(patientId, data);
       setShowInsuranceForm(null);
       await loadPatients();
+      addToast("success", "Insurance added");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to add insurance plan",
@@ -141,6 +146,7 @@ export default function Patients() {
     try {
       await deleteInsurancePlan(patientId, planId);
       await loadPatients();
+      addToast("info", "Insurance removed");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to remove insurance plan",
@@ -216,7 +222,7 @@ export default function Patients() {
                       {p.first_name} {p.last_name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      DOB: {p.date_of_birth} &middot; {formatGender(p.gender)}
+                      DOB: {formatDate(p.date_of_birth)} &middot; {formatGender(p.gender)}
                       {primaryPlan && (
                         <span className="ml-2 text-cyan">
                           &middot; {primaryPlan.payer_name}

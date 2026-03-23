@@ -15,9 +15,11 @@ import type {
   ValidationResult,
   ImageQualityResult,
   DocumentationTemplate,
+  InsuranceCoverage,
   InsurancePlanCreate,
   InsurancePlan,
   PracticeSettings,
+  DenialActionPlan,
 } from "./types";
 
 const BASE = "/bt";
@@ -141,6 +143,9 @@ export const verifyImages = (encounterId: string, image: File) => {
   });
 };
 
+export const getInsuranceCoverage = (encounterId: string) =>
+  request<InsuranceCoverage>(`/v1/encounters/${encounterId}/insurance-coverage`);
+
 export const getDocumentationTemplate = (encounterId: string) =>
   request<DocumentationTemplate>(`/v1/encounters/${encounterId}/documentation-template`, {
     method: "POST",
@@ -244,6 +249,12 @@ export const assessRisk = (claimId: string) =>
     body: JSON.stringify({}),
   });
 
+export const updateClaimStatus = (claimId: string, status: string) =>
+  request<Claim>(`/v1/claims/${claimId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+
 // ── Submissions ──────────────────────────────────────────────────────
 
 export const submitClaim = (claimId: string) =>
@@ -262,6 +273,9 @@ export const listDenials = (status?: string) => {
 };
 
 export const getDenial = (id: string) => request<Denial>(`/v1/denials/${id}`);
+
+export const getDenialActionPlan = (denialId: string) =>
+  request<DenialActionPlan>(`/v1/denials/${denialId}/action-plan`);
 
 export const generateAppeal = (denialId: string, data: GenerateAppealRequest) =>
   request<AppealDocument>(`/v1/denials/${denialId}/generate-appeal`, {

@@ -195,6 +195,26 @@ export interface GenerateAppealRequest {
   state: string;
 }
 
+// ── Insurance Coverage ───────────────────────────────────────────────
+
+export interface InsuranceCoverageProcedure {
+  cdt_code: string;
+  cdt_description: string;
+  frequency_rule: string;
+  preauth_required: boolean;
+}
+
+export interface InsuranceCoverage {
+  has_insurance: boolean;
+  payer_name?: string;
+  payer_id?: string;
+  subscriber_id?: string;
+  group_number?: string;
+  payer_in_directory?: boolean;
+  procedures?: InsuranceCoverageProcedure[];
+  message?: string;
+}
+
 // ── Documentation Template ───────────────────────────────────────────
 
 export interface DocumentationPrompt {
@@ -297,6 +317,27 @@ export interface ImageVerification {
     denial_risk: "low" | "medium" | "high";
     summary: string;
   };
+}
+
+// ── Denial Action Plan ──────────────────────────────────────────────
+
+export interface ActionStep {
+  order: number;
+  title: string;
+  description: string;
+  category: string;
+  urgent: boolean;
+}
+
+export interface DenialActionPlan {
+  denial_type: string;
+  summary: string;
+  what_went_wrong: string;
+  how_to_prevent: string;
+  deadline_days: number | null;
+  deadline_note: string;
+  steps: ActionStep[];
+  total_steps: number;
 }
 
 // ── Health ────────────────────────────────────────────────────────────

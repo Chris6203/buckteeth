@@ -314,6 +314,83 @@ async def validate_for_submission(
     return validation.to_dict()
 
 
+@router.get("/{encounter_id}/insurance-coverage")
+async def get_insurance_coverage(
+    encounter_id: uuid.UUID,
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Get the patient's insurance coverage details relevant to the coded procedures.
+    Returns payer rules, frequency limits, preauth requirements, and coverage info.
+    """
+    from buckteeth.edi.payer_directory import payer_directory
+    from buckteeth.models.patient import Patient, InsurancePlan
+
+    # Get encounter → patient
+    enc_result = await session.execute(
+        select(ClinicalEncounter).where(
+            ClinicalEncounter.id == encounter_id,
+            ClinicalEncounter.tenant_id == tenant_id,
+        )
+    )
+    encounter = enc_result.scalar_one_or_none()
+    if encounter is None:
+        raise HTTPException(status_code=404, detail="Encounter not found")
+
+    # Get patient's insurance
+    plan_result = await session.execute(
+        select(InsurancePlan).where(
+            InsurancePlan.patient_id == encounter.patient_id,
+            InsurancePlan.tenant_id == tenant_id,
+            InsurancePlan.plan_type == "primary",
+        )
+    )
+    plan = plan_result.scalar_one_or_none()
+
+    if plan is None:
+        return {"has_insurance": False, "message": "No primary insurance on file for this patient."}
+
+    # Look up payer in directory
+    payer = payer_directory.lookup(plan.payer_id)
+    if payer is None:
+        payer_results = payer_directory.search(plan.payer_name)
+        payer = payer_results[0] if payer_results else None
+
+    # Get coded procedures
+    coded_result = await session.execute(
+        select(CodedEncounter)
+        .options(selectinload(CodedEncounter.coded_procedures))
+        .where(
+            CodedEncounter.encounter_id == encounter_id,
+            CodedEncounter.tenant_id == tenant_id,
+        )
+    )
+    coded = coded_result.scalar_one_or_none()
+
+    procedures_coverage = []
+    if coded and payer:
+        for cp in coded.coded_procedures:
+            freq_rule = payer.frequency_rules.get(cp.cdt_code, "No specific limit found")
+            needs_preauth = cp.cdt_code in payer.preauth_required_codes
+            procedures_coverage.append({
+                "cdt_code": cp.cdt_code,
+                "cdt_description": cp.cdt_description,
+                "frequency_rule": freq_rule,
+                "preauth_required": needs_preauth,
+            })
+
+    return {
+        "has_insurance": True,
+        "payer_name": plan.payer_name,
+        "payer_id": plan.payer_id,
+        "subscriber_id": plan.subscriber_id,
+        "group_number": plan.group_number,
+        "payer_in_directory": payer is not None,
+        "procedures": procedures_coverage,
+    }
+
+
 @router.post("/{encounter_id}/documentation-template")
 async def get_documentation_template(
     encounter_id: uuid.UUID,

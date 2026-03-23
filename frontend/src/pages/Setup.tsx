@@ -665,6 +665,67 @@ export default function Setup() {
               />
             </div>
           </div>
+
+          <div className="card p-5">
+            <h3 className="text-sm font-heading font-semibold text-gray-300 mb-4">
+              Supported Insurance Payers
+            </h3>
+            <p className="text-xs font-body text-gray-500 mb-4">
+              Each payer has pre-configured frequency rules, pre-authorization requirements, and common denial patterns.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Delta Dental</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["CA", "NY", "PA", "TX", "IL", "WA", "MI", "MA"].map((state) => (
+                    <span key={state} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-heading font-semibold bg-cyan/10 text-cyan border border-cyan/30">
+                      Delta Dental {state}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Major Commercial</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["MetLife", "Cigna", "Aetna", "Guardian", "UHC", "Humana", "Principal", "Ameritas", "Lincoln Financial", "Sun Life", "Anthem BCBS"].map((name) => (
+                    <span key={name} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-heading font-semibold bg-white/[0.06] text-gray-300 border border-white/[0.08]">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Government</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["GEHA", "TRICARE"].map((name) => (
+                    <span key={name} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-heading font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Medicaid</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["DentaQuest", "MCNA", "Liberty Dental"].map((name) => (
+                    <span key={name} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-heading font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-heading font-semibold text-gray-400 uppercase tracking-wider mb-2">Other</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Dental Health Alliance", "Connection Dental"].map((name) => (
+                    <span key={name} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-heading font-semibold bg-white/[0.06] text-gray-400 border border-white/[0.08]">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

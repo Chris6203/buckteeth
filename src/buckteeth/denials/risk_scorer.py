@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -92,7 +93,9 @@ class DenialRiskScorer:
         )
 
         raw_text = response.content[0].text
-        data = json.loads(raw_text)
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", raw_text.strip())
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+        data = json.loads(cleaned)
 
         return RiskAssessment(
             risk_score=data["risk_score"],

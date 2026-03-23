@@ -7,6 +7,7 @@ medical necessity for dental procedures.
 from __future__ import annotations
 
 import json
+import re
 
 import anthropic
 
@@ -58,7 +59,9 @@ class NarrativeGenerator:
         )
 
         raw_text = response.content[0].text
-        data = json.loads(raw_text)
+        cleaned = re.sub(r"^```(?:json)?\s*\n?", "", raw_text.strip())
+        cleaned = re.sub(r"\n?```\s*$", "", cleaned)
+        data = json.loads(cleaned)
 
         return NarrativeResponse(
             cdt_code=data["cdt_code"],

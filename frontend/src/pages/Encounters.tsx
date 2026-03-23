@@ -11,12 +11,15 @@ import {
   validateEncounter,
   checkImageQuality,
   getDocumentationTemplate,
+  getInsuranceCoverage,
 } from "../api/client";
-import type { Patient, Encounter, CodedEncounter, Claim, ImageVerification, ValidationResult, ImageQualityResult, DocumentationTemplate } from "../api/types";
+import type { Patient, Encounter, CodedEncounter, Claim, ImageVerification, ValidationResult, ImageQualityResult, DocumentationTemplate, InsuranceCoverage } from "../api/types";
+import { useToast } from "../components/Toast";
 
 type Step = "input" | "parsing" | "coding" | "review" | "claim" | "done";
 
 export default function Encounters() {
+  const { addToast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientId, setPatientId] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
@@ -37,6 +40,9 @@ export default function Encounters() {
   const [verification, setVerification] = useState<ImageVerification | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [docTemplate, setDocTemplate] = useState<DocumentationTemplate | null>(null);
+  const [coverage, setCoverage] = useState<InsuranceCoverage | null>(null);
+  const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Images
   const [images, setImages] = useState<File[]>([]);
@@ -219,8 +225,21 @@ export default function Encounters() {
       setStep("coding");
       const codedEnc = await codeEncounter(enc.id);
       setCoded(codedEnc);
+      // Auto-select codes with confidence >= 70
+      setSelectedCodes(
+        new Set(
+          codedEnc.coded_procedures
+            .filter((cp) => cp.confidence_score >= 70)
+            .map((cp) => cp.id),
+        ),
+      );
 
-      // Step 2b: Run pre-submission validation
+      // Step 2b: Get insurance coverage info (non-blocking)
+      getInsuranceCoverage(enc.id)
+        .then((cov) => setCoverage(cov))
+        .catch(() => {});
+
+      // Step 2c: Run pre-submission validation
       try {
         const valResult = await validateEncounter(enc.id, images.length > 0);
         setValidation(valResult);
@@ -262,6 +281,7 @@ export default function Encounters() {
       const newClaim = await createClaim(coded.id);
       setClaim(newClaim);
       setStep("done");
+      addToast("success", "Claim generated successfully");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create claim";
       setError(
@@ -281,6 +301,7 @@ export default function Encounters() {
     setVerification(null);
     setValidation(null);
     setDocTemplate(null);
+    setCoverage(null);
     setEncounter(null);
     setCoded(null);
     setClaim(null);
@@ -423,7 +444,7 @@ export default function Encounters() {
               Patient & Provider
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="relative">
+              <div className="relative" onBlur={() => setTimeout(() => { if (patientId) setPatientSearch(""); }, 200)}>
                 <input
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
@@ -444,7 +465,7 @@ export default function Encounters() {
                           type="button"
                           onClick={() => {
                             setPatientId(p.id);
-                            setPatientSearch(`${p.first_name} ${p.last_name}`);
+                            setPatientSearch("");
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm font-body hover:bg-white/[0.04] transition-colors ${
                             patientId === p.id ? "text-cyan" : "text-gray-300"
@@ -717,6 +738,68 @@ export default function Encounters() {
             </div>
           )}
 
+          {/* Insurance Coverage */}
+          {coverage && (
+            <div className={`card p-5 ${coverage.has_insurance ? "border-cyan/15" : "border-amber-500/20"}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-heading font-semibold text-gray-300">
+                  Insurance Coverage
+                </h3>
+                {coverage.has_insurance ? (
+                  <span className="text-xs font-heading font-semibold text-cyan bg-cyan/10 border border-cyan/30 px-2 py-0.5 rounded">
+                    {coverage.payer_name}
+                  </span>
+                ) : (
+                  <span className="text-xs font-heading font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">
+                    No Insurance
+                  </span>
+                )}
+              </div>
+
+              {coverage.has_insurance && coverage.subscriber_id && (
+                <p className="text-xs text-gray-500 font-body mb-3">
+                  Subscriber: {coverage.subscriber_id} &middot; Group: {coverage.group_number}
+                </p>
+              )}
+
+              {!coverage.has_insurance && (
+                <p className="text-sm text-amber-400 font-body">
+                  {coverage.message || "No primary insurance on file. The patient will be responsible for the full amount."}
+                </p>
+              )}
+
+              {coverage.procedures && coverage.procedures.length > 0 && (
+                <div className="space-y-2">
+                  {coverage.procedures.map((cp, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between bg-navy-900 rounded-lg px-3 py-2.5 border border-white/[0.04]"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-heading font-bold text-cyan">
+                          {cp.cdt_code}
+                        </span>
+                        <span className="text-xs text-gray-400 truncate">
+                          {cp.cdt_description}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs text-gray-500 font-body">
+                          {cp.frequency_rule}
+                        </span>
+                        {cp.preauth_required && (
+                          <span className="text-xs font-heading font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                            Pre-auth
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Parsed Procedures */}
           <div className="card p-5">
             <h3 className="text-sm font-heading font-semibold text-gray-300 mb-4">
@@ -752,43 +835,73 @@ export default function Encounters() {
             </div>
           </div>
 
-          {/* AI-Suggested CDT Codes */}
+          {/* AI-Suggested CDT Codes — selectable */}
           <div className="card p-5">
-            <h3 className="text-sm font-heading font-semibold text-gray-300 mb-4">
-              AI-Suggested CDT Codes
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-heading font-semibold text-gray-300">
+                AI-Suggested CDT Codes
+              </h3>
+              <span className="text-xs text-gray-500 font-body">
+                {selectedCodes.size} of {coded.coded_procedures.length} selected for claim
+              </span>
+            </div>
             <div className="space-y-3">
-              {coded.coded_procedures.map((cp) => (
-                <div
-                  key={cp.id}
-                  className="bg-navy-900 rounded-lg p-4 border border-white/[0.06]"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-heading font-bold text-cyan">
-                          {cp.cdt_code}
-                        </span>
-                        <span className="text-sm text-gray-300">
-                          {cp.cdt_description}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
-                        {cp.tooth_number && (
-                          <span>Tooth: {cp.tooth_number}</span>
+              {coded.coded_procedures.map((cp) => {
+                const isSelected = selectedCodes.has(cp.id);
+                const feeSchedule = (() => {
+                  try {
+                    const setup = JSON.parse(localStorage.getItem("pp_practice_setup") || "{}");
+                    return setup.fees?.find((f: { cdt_code: string; fee: string }) => f.cdt_code === cp.cdt_code)?.fee;
+                  } catch { return null; }
+                })();
+                return (
+                  <div
+                    key={cp.id}
+                    className={`bg-navy-900 rounded-lg p-4 border transition-colors cursor-pointer ${
+                      isSelected ? "border-cyan/30" : "border-white/[0.04] opacity-50"
+                    }`}
+                    onClick={() => {
+                      setSelectedCodes((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(cp.id)) next.delete(cp.id);
+                        else next.add(cp.id);
+                        return next;
+                      });
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected ? "bg-cyan border-cyan" : "border-gray-600"
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-navy-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
                         )}
-                        {cp.surfaces && <span>Surfaces: {cp.surfaces}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-heading font-bold text-cyan">{cp.cdt_code}</span>
+                            <span className="text-sm text-gray-300">{cp.cdt_description}</span>
+                            {feeSchedule && parseFloat(feeSchedule) > 0 && (
+                              <span className="text-sm font-heading font-semibold text-lime">${parseFloat(feeSchedule).toFixed(2)}</span>
+                            )}
+                          </div>
+                          <ConfidenceBadge score={cp.confidence_score} />
+                        </div>
+                        <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
+                          {cp.tooth_number && <span>Tooth: {cp.tooth_number}</span>}
+                          {cp.surfaces && <span>Surfaces: {cp.surfaces}</span>}
+                        </div>
+                        {cp.ai_reasoning && (
+                          <p className="text-xs text-gray-500 mt-2 leading-relaxed">{cp.ai_reasoning}</p>
+                        )}
                       </div>
                     </div>
-                    <ConfidenceBadge score={cp.confidence_score} />
                   </div>
-                  {cp.ai_reasoning && (
-                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                      {cp.ai_reasoning}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -1061,16 +1174,63 @@ export default function Encounters() {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button onClick={handleReset} className="btn-secondary flex-1">
+            <button onClick={handleReset} className="btn-secondary">
               Start Over
             </button>
             <button
-              onClick={handleApproveAndClaim}
-              className="btn-primary flex-1 py-3"
+              onClick={() => {
+                setEncounter(null);
+                setCoded(null);
+                setVerification(null);
+                setValidation(null);
+                setDocTemplate(null);
+                setCoverage(null);
+                setStep("input");
+              }}
+              className="btn-secondary"
             >
-              Approve & Generate Claim
+              Edit & Re-process
+            </button>
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={selectedCodes.size === 0}
+              className="btn-primary flex-1 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Approve {selectedCodes.size} Code{selectedCodes.size !== 1 ? "s" : ""} & Generate Claim
             </button>
           </div>
+
+          {/* Confirmation dialog */}
+          {showConfirm && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+              <div className="card p-6 max-w-md w-full">
+                <h3 className="text-lg font-heading font-bold text-gray-100 mb-2">
+                  Generate Claim?
+                </h3>
+                <p className="text-sm text-gray-400 font-body mb-4">
+                  This will create an insurance claim with {selectedCodes.size} selected CDT code{selectedCodes.size !== 1 ? "s" : ""}.
+                </p>
+                {validation && !validation.passed && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-amber-400 font-heading font-semibold">
+                      Warning: There are unresolved validation issues. The claim may be denied.
+                    </p>
+                  </div>
+                )}
+                <div className="flex gap-3 justify-end">
+                  <button onClick={() => setShowConfirm(false)} className="btn-secondary">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { setShowConfirm(false); handleApproveAndClaim(); }}
+                    className="btn-primary"
+                  >
+                    Confirm & Generate
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
