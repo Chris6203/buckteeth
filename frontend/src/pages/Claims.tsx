@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { listClaims, submitClaim, assessRisk, listPatients, updateClaimStatus } from "../api/client";
 import type { Claim, Patient, RiskAssessment } from "../api/types";
 import { formatDate } from "../utils";
@@ -268,9 +268,8 @@ export default function Claims() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {claims.map((c) => (
-                  <>
+                  <React.Fragment key={c.id}>
                     <tr
-                      key={c.id}
                       onClick={() => toggleExpand(c.id)}
                       className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                     >
@@ -290,7 +289,14 @@ export default function Claims() {
                         {formatDollars(c.total_fee_submitted ?? 0)}
                       </td>
                       <td className="table-cell">
-                        <StatusBadge status={c.status} />
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={c.status} />
+                          {c.preauth_required && (
+                            <span className="text-xs font-heading font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                              Pre-auth Required
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="table-cell">
                         <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
@@ -341,6 +347,31 @@ export default function Claims() {
                               </div>
                             </>
                           )}
+                          {c.narratives && c.narratives.length > 0 && (
+                            <div className="mt-3">
+                              <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                                Narratives
+                              </div>
+                              <div className="space-y-1">
+                                {c.narratives.map((n) => (
+                                  <div
+                                    key={n.id}
+                                    className="text-sm font-body py-1.5 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]"
+                                  >
+                                    <span className="font-mono text-cyan text-xs mr-2">{n.cdt_code}</span>
+                                    <span className="italic text-gray-400">{n.narrative_text}</span>
+                                    <span className="text-xs text-gray-600 ml-2">({n.generated_by})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {c.secondary_payer_name && (
+                            <div className="mt-3 text-sm font-body text-gray-400">
+                              <span className="text-gray-500 font-heading font-semibold text-xs uppercase tracking-wider">Secondary:</span>{" "}
+                              <span className="text-gray-300">{c.secondary_payer_name}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06]">
                             <button
                               onClick={() => handleDownloadPdf(c.id)}
@@ -369,7 +400,7 @@ export default function Claims() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -387,7 +418,14 @@ export default function Claims() {
                     <span className="font-heading font-medium text-gray-100">
                       {c.provider_name}
                     </span>
-                    <StatusBadge status={c.status} />
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={c.status} />
+                      {c.preauth_required && (
+                        <span className="text-xs font-heading font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          Pre-auth Required
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-sm font-body mb-1">
                     <span className="text-gray-400">{getPatientName(c.patient_id)}</span>
@@ -423,6 +461,29 @@ export default function Claims() {
                           </div>
                         ))}
                       </>
+                    )}
+                    {c.narratives && c.narratives.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-xs font-heading font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                          Narratives
+                        </div>
+                        {c.narratives.map((n) => (
+                          <div
+                            key={n.id}
+                            className="text-sm font-body py-1.5 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04] mb-1"
+                          >
+                            <span className="font-mono text-cyan text-xs mr-2">{n.cdt_code}</span>
+                            <span className="italic text-gray-400">{n.narrative_text}</span>
+                            <span className="text-xs text-gray-600 ml-2">({n.generated_by})</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {c.secondary_payer_name && (
+                      <div className="mt-2 text-sm font-body text-gray-400">
+                        <span className="text-gray-500 font-heading font-semibold text-xs uppercase tracking-wider">Secondary:</span>{" "}
+                        <span className="text-gray-300">{c.secondary_payer_name}</span>
+                      </div>
                     )}
                     <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/[0.06]">
                       <button

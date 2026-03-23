@@ -54,6 +54,31 @@ export interface PracticeSettings {
   fee_schedule: Record<string, number>;
 }
 
+// ── Provider ─────────────────────────────────────────────────────────
+
+export interface Provider {
+  id: string;
+  first_name: string;
+  last_name: string;
+  credentials: string;
+  npi: string;
+  specialty: string;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string | null;
+}
+
+export interface ProviderCreate {
+  first_name: string;
+  last_name: string;
+  credentials?: string;
+  npi?: string;
+  specialty?: string;
+  email?: string;
+  phone?: string;
+}
+
 // ── Encounter ────────────────────────────────────────────────────────
 
 export interface ClinicalProcedure {

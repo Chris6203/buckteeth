@@ -88,6 +88,7 @@ export default function Patients() {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showInsuranceForm, setShowInsuranceForm] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { addToast } = useToast();
 
   const [missingTeeth, setMissingTeeth] = useLocalStorageState<Record<string, string>>(
@@ -183,6 +184,18 @@ export default function Patients() {
 
       {showForm && <CreatePatientForm onSubmit={handleCreate} />}
 
+      {!loading && patients.length > 0 && (
+        <div className="mb-5">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search patients..."
+            className="input-field w-full sm:w-72"
+          />
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-3 text-gray-400">
           <div className="w-5 h-5 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
@@ -200,7 +213,11 @@ export default function Patients() {
         </div>
       ) : (
         <div className="space-y-3">
-          {patients.map((p) => {
+          {patients.filter((p) => {
+            if (!searchQuery.trim()) return true;
+            const fullName = `${p.first_name} ${p.last_name}`.toLowerCase();
+            return fullName.includes(searchQuery.toLowerCase().trim());
+          }).map((p) => {
             const expanded = expandedId === p.id;
             const plans = p.insurance_plans || [];
             const primaryPlan = plans.find((ip) => ip.plan_type === "primary");

@@ -20,6 +20,8 @@ import type {
   InsurancePlan,
   PracticeSettings,
   DenialActionPlan,
+  Provider,
+  ProviderCreate,
 } from "./types";
 
 const BASE = "/bt";
@@ -85,6 +87,25 @@ export const updateSettings = (data: PracticeSettings) =>
     method: "PUT",
     body: JSON.stringify(data),
   });
+
+// ── Providers ────────────────────────────────────────────────────────
+
+export const listProviders = () => request<Provider[]>("/v1/providers");
+
+export const createProvider = (data: ProviderCreate) =>
+  request<Provider>("/v1/providers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export const updateProvider = (id: string, data: Partial<ProviderCreate>) =>
+  request<Provider>(`/v1/providers/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export const deactivateProvider = (id: string) =>
+  request<void>(`/v1/providers/${id}`, { method: "DELETE" });
 
 // ── Encounters ───────────────────────────────────────────────────────
 

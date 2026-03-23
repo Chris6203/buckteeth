@@ -7,6 +7,7 @@ import Encounters from "./pages/Encounters";
 import Patients from "./pages/Patients";
 import Claims from "./pages/Claims";
 import Denials from "./pages/Denials";
+import Providers from "./pages/Providers";
 import Setup from "./pages/Setup";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/encounters" element={<Encounters />} />
             <Route path="/patients" element={<Patients />} />
+            <Route path="/providers" element={<Providers />} />
             <Route path="/claims" element={<Claims />} />
             <Route path="/denials" element={<Denials />} />
             <Route path="/setup" element={<Setup />} />

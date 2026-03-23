@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   listPatients,
+  listProviders,
   createEncounterFromNotes,
   createEncounterFromImage,
   codeEncounter,
@@ -13,7 +14,7 @@ import {
   getDocumentationTemplate,
   getInsuranceCoverage,
 } from "../api/client";
-import type { Patient, Encounter, CodedEncounter, Claim, ImageVerification, ValidationResult, ImageQualityResult, DocumentationTemplate, InsuranceCoverage } from "../api/types";
+import type { Patient, Provider, Encounter, CodedEncounter, Claim, ImageVerification, ValidationResult, ImageQualityResult, DocumentationTemplate, InsuranceCoverage } from "../api/types";
 import { useToast } from "../components/Toast";
 
 type Step = "input" | "parsing" | "coding" | "review" | "claim" | "done";
@@ -21,6 +22,7 @@ type Step = "input" | "parsing" | "coding" | "review" | "claim" | "done";
 export default function Encounters() {
   const { addToast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [providersList, setProvidersList] = useState<Provider[]>([]);
   const [patientId, setPatientId] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [providerName, setProviderName] = useState(() => {
@@ -62,6 +64,15 @@ export default function Encounters() {
       .then((p) => {
         setPatients(p);
         if (p.length > 0) setPatientId(p[0].id);
+      })
+      .catch(() => {});
+    listProviders()
+      .then((pv) => {
+        setProvidersList(pv);
+        if (pv.length > 0) {
+          const first = pv[0];
+          setProviderName(`Dr. ${first.first_name} ${first.last_name}, ${first.credentials}`);
+        }
       })
       .catch(() => {});
   }, []);
@@ -495,12 +506,29 @@ export default function Encounters() {
                   </p>
                 )}
               </div>
-              <input
-                value={providerName}
-                onChange={(e) => setProviderName(e.target.value)}
-                placeholder="Provider name"
-                className="input-field"
-              />
+              {providersList.length > 0 ? (
+                <select
+                  value={providerName}
+                  onChange={(e) => setProviderName(e.target.value)}
+                  className="input-field"
+                >
+                  {providersList.map((pv) => {
+                    const label = `Dr. ${pv.first_name} ${pv.last_name}, ${pv.credentials}`;
+                    return (
+                      <option key={pv.id} value={label}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <input
+                  value={providerName}
+                  onChange={(e) => setProviderName(e.target.value)}
+                  placeholder="Provider name"
+                  className="input-field"
+                />
+              )}
             </div>
           </div>
 
