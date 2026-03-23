@@ -108,8 +108,14 @@ async def import_patient_from_pms(
         session.add(plan)
         await session.flush()
 
-    await session.refresh(patient)
-    return patient
+    # Re-query with eager load to avoid lazy load error
+    from sqlalchemy.orm import selectinload
+    result = await session.execute(
+        select(Patient)
+        .options(selectinload(Patient.insurance_plans))
+        .where(Patient.id == patient.id)
+    )
+    return result.scalar_one()
 
 
 @router.post("/import-encounter", response_model=EncounterResponse, status_code=201)

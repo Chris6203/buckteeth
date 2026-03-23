@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -116,6 +117,17 @@ async def create_claim(
             )
         )
 
+    # 4b. Load fee schedule from practice settings
+    import json as _json
+    fee_schedule: dict[str, float] = {}
+    try:
+        settings_file = os.environ.get("SETTINGS_FILE", "/opt/buckteeth/practice_settings.json")
+        with open(settings_file) as f:
+            practice_settings = _json.load(f)
+            fee_schedule = practice_settings.get("fee_schedule", {})
+    except (FileNotFoundError, _json.JSONDecodeError):
+        pass
+
     # 5. Run ClaimBuilder
     builder = ClaimBuilder(api_key=settings.anthropic_api_key)
     claim_detail = await builder.build(
@@ -148,9 +160,14 @@ async def create_claim(
     session.add(claim)
     await session.flush()
 
-    # Persist ClaimProcedures
+    # Persist ClaimProcedures with fees from fee schedule
+    total_fee = 0.0
     for i, cp in enumerate(coded_encounter.coded_procedures):
         proc_detail = claim_detail.procedures[i] if i < len(claim_detail.procedures) else None
+        # Use fee schedule first, then claim builder's fee, then None
+        fee = fee_schedule.get(cp.cdt_code) or (proc_detail.fee_submitted if proc_detail else None)
+        if fee:
+            total_fee += float(fee)
         claim_proc = ClaimProcedure(
             tenant_id=tenant_id,
             claim_id=claim.id,
@@ -160,9 +177,13 @@ async def create_claim(
             tooth_number=cp.tooth_number,
             surfaces=cp.surfaces,
             quadrant=cp.quadrant,
-            fee_submitted=proc_detail.fee_submitted if proc_detail else None,
+            fee_submitted=fee,
         )
         session.add(claim_proc)
+
+    # Update claim total if we have fees
+    if total_fee > 0:
+        claim.total_fee_submitted = total_fee
 
     # Persist ClaimNarratives
     for narrative in claim_detail.narratives:

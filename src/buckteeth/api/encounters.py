@@ -28,6 +28,9 @@ async def create_encounter_from_notes(
     tenant_id: uuid.UUID = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
+    if not body.notes or not body.notes.strip():
+        raise HTTPException(status_code=400, detail="Clinical notes cannot be empty")
+
     parser = ClinicalNoteParser(api_key=settings.anthropic_api_key)
     parsed = await parser.parse(body.notes)
 
