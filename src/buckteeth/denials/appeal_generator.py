@@ -231,7 +231,32 @@ Payer Rules for This Procedure:
         from datetime import date as _date
         today = _date.today().strftime("%B %d, %Y")
 
+        # Load practice settings for provider info
+        import json as _json
+        practice_name = ""
+        practice_address = ""
+        practice_phone = ""
+        try:
+            import os as _os
+            settings_file = _os.environ.get("SETTINGS_FILE", "/opt/buckteeth/practice_settings.json")
+            with open(settings_file) as f:
+                ps = _json.load(f)
+                practice_name = ps.get("practice_name", "")
+                addr_parts = [ps.get("address_line1", ""), ps.get("city", ""), ps.get("state", ""), ps.get("zip", "")]
+                practice_address = ", ".join(p for p in addr_parts if p)
+                practice_phone = ps.get("phone", "")
+        except Exception:
+            pass
+
         return f"""TODAY'S DATE: {today} (use this as the letter date)
+
+IMPORTANT: Do NOT use placeholder brackets like [Insert X]. Use the actual values provided below.
+If a value is not available, omit it rather than using a placeholder.
+
+Practice Information:
+- Practice Name: {practice_name or request.provider_name}
+- Practice Address: {practice_address or 'On file'}
+- Practice Phone: {practice_phone or 'On file'}
 
 Denial Details:
 - Patient: {request.patient_name}

@@ -22,6 +22,18 @@ Dental terminology and common abbreviations:
 - ext = extraction
 - # = tooth number (e.g. #14 means tooth number 14)
 
+IMPORTANT clinical billing rules:
+- A "routine recall visit" or "recall exam" ALWAYS includes a periodic oral evaluation \
+  (D0120) even if not explicitly stated. Always include the evaluation as a procedure.
+- "Child patient" or patient under age 14 gets D1120 (child prophy), NOT D1110 (adult).
+- For extractions: if the notes say "extracted in one piece" or describe a simple \
+  forceps extraction with NO bone removal, NO flap, NO sectioning, this is D7140 (simple). \
+  Only code D7210 (surgical) if the notes explicitly mention bone removal, flap, or sectioning.
+- A crown impression/final impression is part of the crown prep procedure — do NOT code \
+  it separately as diagnostic casts (D0470) unless the notes specifically say "diagnostic casts."
+- Do NOT duplicate procedures. If core buildup is mentioned once, list it once even if \
+  the crown prep notes mention the tooth condition twice.
+
 Return your response as JSON with the following structure:
 {
   "procedures": [
