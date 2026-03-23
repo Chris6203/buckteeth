@@ -204,30 +204,28 @@ def generate_action_plan(
     Returns:
         DenialActionPlan with specific steps to resolve
     """
-    # Find matching pattern
-    template = DENIAL_PATTERNS.get(denial_reason_code, None)
+    # Check description keywords FIRST — payers reuse codes with different meanings
+    desc_lower = denial_reason_description.lower()
+    template = None
 
-    # Try keyword matching on the description if no exact code match
+    if "charting" in desc_lower or ("periodontal" in desc_lower and "submit" in desc_lower):
+        # Perio charting missing — regardless of code
+        template = {
+            "type": "missing_documentation",
+            "what_went_wrong": "The SRP claim was denied because periodontal charting was not included. Insurance companies require full periodontal charting (pocket depths, bleeding on probing, clinical attachment levels) to justify scaling and root planing.",
+            "how_to_prevent": "Always attach periodontal charting when submitting SRP claims (D4341/D4342). Our system flags this as a 90% denial risk if charting is missing.",
+            "steps": [
+                ("gather", "Pull the periodontal charting", "Retrieve the full periodontal chart from the date of service. You need: 6-point probing depths for all teeth in the treated quadrant(s), bleeding on probing sites, and clinical attachment levels."),
+                ("gather", "Get the radiographs", "Pull the bitewing or periapical radiographs that show bone levels in the treated area. These must be taken within 12 months of the SRP date."),
+                ("prepare", "Write a clinical narrative", "Prepare a narrative that includes: periodontal diagnosis (Stage/Grade per AAP classification), specific pocket depths (e.g., '5-7mm pockets at teeth #2-5'), bleeding on probing findings, and radiographic bone loss description."),
+                ("prepare", "Complete a periodontal charting form", "If your charting isn't on a standard form, transfer the data to an ADA-compatible periodontal charting form that the payer can easily review."),
+                ("submit", "Submit the appeal with all documentation", "Send: appeal letter, complete periodontal charting, radiographs, and clinical narrative. Mark it as a response to the denial with the original claim number."),
+                ("follow_up", "Set a reminder for 30 days", "Follow up with the payer if you haven't received a response in 30 days."),
+            ],
+        }
     if template is None:
-        desc_lower = denial_reason_description.lower()
-        if "pre-auth" in desc_lower or "preauthorization" in desc_lower or "predetermination" in desc_lower:
+        if "pre-auth" in desc_lower or "preauthorization" in desc_lower or "predetermination" in desc_lower or "authorization" in desc_lower:
             template = DENIAL_PATTERNS["197"]
-        elif "charting" in desc_lower or "periodontal" in desc_lower:
-            template = DENIAL_PATTERNS.get("N362", GENERIC_PLAN)
-            # Override with perio-specific plan
-            template = {
-                "type": "missing_documentation",
-                "what_went_wrong": "The SRP claim was denied because periodontal charting was not included. Insurance companies require full periodontal charting (pocket depths, bleeding on probing, clinical attachment levels) to justify scaling and root planing.",
-                "how_to_prevent": "Always attach periodontal charting when submitting SRP claims (D4341/D4342). Our system flags this as a 90% denial risk if charting is missing.",
-                "steps": [
-                    ("gather", "Pull the periodontal charting", "Retrieve the full periodontal chart from the date of service. You need: 6-point probing depths for all teeth in the treated quadrant(s), bleeding on probing sites, and clinical attachment levels."),
-                    ("gather", "Get the radiographs", "Pull the bitewing or periapical radiographs that show bone levels in the treated area. These must be taken within 12 months of the SRP date."),
-                    ("prepare", "Write a clinical narrative", "Prepare a narrative that includes: periodontal diagnosis (Stage/Grade per AAP classification), specific pocket depths (e.g., '5-7mm pockets at teeth #2-5'), bleeding on probing findings, and radiographic bone loss description."),
-                    ("prepare", "Complete a periodontal charting form", "If your charting isn't on a standard form, transfer the data to an ADA-compatible periodontal charting form that the payer can easily review."),
-                    ("submit", "Submit the appeal with all documentation", "Send: appeal letter, complete periodontal charting, radiographs, and clinical narrative. Mark it as a response to the denial with the original claim number."),
-                    ("follow_up", "Set a reminder for 30 days", "Follow up with the payer if you haven't received a response in 30 days."),
-                ],
-            }
         elif "frequency" in desc_lower or "maximum" in desc_lower or "benefit" in desc_lower:
             template = DENIAL_PATTERNS["119"]
         elif "duplicate" in desc_lower:
@@ -240,6 +238,10 @@ def generate_action_plan(
             template = DENIAL_PATTERNS["22"]
         elif "fee schedule" in desc_lower or "exceeds" in desc_lower:
             template = DENIAL_PATTERNS["45"]
+
+    # Fall back to exact code match if description didn't match
+    if template is None:
+        template = DENIAL_PATTERNS.get(denial_reason_code, None)
 
     if template is None:
         template = GENERIC_PLAN

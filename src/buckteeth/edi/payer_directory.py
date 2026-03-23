@@ -52,13 +52,15 @@ class PayerDirectory:
         return None
 
     def search(self, query: str) -> list[Payer]:
-        """Return payers whose name or short_name contains *query* (case-insensitive)."""
+        """Return payers whose name or short_name matches *query* (case-insensitive, bidirectional)."""
         q = query.lower()
         return [
             p
             for p in self._payers.values()
             if q in p.name.lower()
+            or p.name.lower() in q
             or q in p.short_name.lower()
+            or p.short_name.lower() in q
             or q in p.payer_id.lower()
             or q in p.edi_payer_id.lower()
         ]

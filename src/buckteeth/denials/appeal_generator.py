@@ -228,7 +228,12 @@ Payer Rules for This Procedure:
 - Pre-authorization Required: {'Yes' if payer_rules.get('preauth_required') else 'No'}
 """
 
-        return f"""Denial Details:
+        from datetime import date as _date
+        today = _date.today().strftime("%B %d, %Y")
+
+        return f"""TODAY'S DATE: {today} (use this as the letter date)
+
+Denial Details:
 - Patient: {request.patient_name}
 - Provider: {request.provider_name}
 - Date of Service: {request.date_of_service}

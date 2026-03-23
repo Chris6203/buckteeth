@@ -346,6 +346,10 @@ def validate_pre_submission(
          "Bitewing X-rays (D0274) are included in full-mouth series (D0210). "
          "BWX will likely be denied when billed same day as FMX.",
          "warn", 70),
+        ({"D0330"}, {"D0210"},
+         "Panoramic X-ray (D0330) and full-mouth series (D0210) should not be billed same day. "
+         "These are duplicative radiographic surveys — payers will deny one or both.",
+         "warn", 70),
         ({"D1110"}, {"D4910"},
          "Prophy (D1110) and perio maintenance (D4910) cannot be billed same day. "
          "Use one or the other based on patient's periodontal status.",
