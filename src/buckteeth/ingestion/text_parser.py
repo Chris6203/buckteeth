@@ -22,6 +22,14 @@ Dental terminology and common abbreviations:
 - ext = extraction
 - # = tooth number (e.g. #14 means tooth number 14)
 
+If the notes are vague or informal, do your best to infer what procedures were likely \
+performed or planned. For example:
+- "patient has no teeth, going to add some" → likely dentures (D5110/D5120) or implants
+- "needs a cleaning" → prophylaxis (D1110 or D1120)
+- "tooth hurts" → limited evaluation (D0140) and possibly a periapical X-ray (D0220)
+Always return at least your best interpretation. If truly no procedures can be identified, \
+return an empty array but include a "notes" field explaining what information is missing.
+
 IMPORTANT clinical billing rules:
 - A "routine recall visit" or "recall exam" ALWAYS includes a periodic oral evaluation \
   (D0120) even if not explicitly stated. Always include the evaluation as a procedure.

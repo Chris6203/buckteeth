@@ -833,6 +833,32 @@ export default function Encounters() {
             <h3 className="text-sm font-heading font-semibold text-gray-300 mb-4">
               Parsed Procedures
             </h3>
+            {encounter.procedures.length === 0 && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400 font-heading font-semibold mb-1">
+                  No procedures could be identified
+                </p>
+                <p className="text-xs text-gray-400 font-body">
+                  The clinical notes didn't contain enough detail to extract specific dental procedures.
+                  Try adding more detail — for example, specific procedure names (prophy, crown prep, SRP),
+                  tooth numbers, and clinical findings.
+                </p>
+                <button
+                  onClick={() => {
+                    setEncounter(null);
+                    setCoded(null);
+                    setVerification(null);
+                    setValidation(null);
+                    setDocTemplate(null);
+                    setCoverage(null);
+                    setStep("input");
+                  }}
+                  className="btn-secondary text-xs mt-3"
+                >
+                  Edit Notes & Try Again
+                </button>
+              </div>
+            )}
             <div className="space-y-3">
               {encounter.procedures.map((proc) => (
                 <div
