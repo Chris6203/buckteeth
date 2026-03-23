@@ -1,6 +1,8 @@
-# Buckteeth
+# Phenomenal Problems (Buckteeth)
 
 AI-powered dental insurance coding and revenue cycle management platform.
+
+**Live:** https://phenomenalproblems.com
 
 ## What It Does
 
@@ -12,7 +14,7 @@ Buckteeth takes clinical input in any form — structured data, free-text notes,
 4. **Builds** complete insurance claims with narratives and attachments
 5. **Submits** claims through clearinghouses or generates ADA dental claim forms
 6. **Predicts** denial risk before submission and suggests proactive fixes
-7. **Manages** denials with AI-generated appeal letters citing case law
+7. **Manages** denials with AI-generated payer-specific appeal letters citing case law
 8. **Sends** formal complaint letters to state insurance commissioners via physical mail
 9. **Tracks** the full revenue cycle from coding through payment posting
 
@@ -23,13 +25,14 @@ Buckteeth takes clinical input in any form — structured data, free-text notes,
 
 ## Tech Stack
 
-- **Backend:** Python 3.11+ (FastAPI, SQLAlchemy 2.0 async, Pydantic v2)
-- **Frontend:** React 18 (TypeScript, Vite, Tailwind CSS, React Router v6)
-- **Database:** PostgreSQL 15+ (async via asyncpg; SQLite for tests)
+- **Backend:** Python 3.11+ (FastAPI, SQLAlchemy 2.0 async, Pydantic v2) — 77 files, 16,279 lines
+- **Frontend:** React 18 (TypeScript, Vite, Tailwind CSS, React Router v6) — 23 files
+- **Database:** PostgreSQL 16 (async via asyncpg; 18 tables)
 - **AI:** Claude (Anthropic SDK) — coding suggestions, appeal generation, risk assessment
 - **PDF:** ReportLab (ADA dental claim forms)
-- **Auth:** AWS Cognito (planned)
-- **Deployment:** Docker / AWS ECS (planned)
+- **EDI:** X12 837D, 270/271, 835 (HIPAA-compliant dental claim processing)
+- **Auth:** JWT tokens, role-based access (admin, provider, staff)
+- **Deployment:** Ubuntu server, nginx, systemd, Let's Encrypt SSL
 
 ## Architecture
 
@@ -37,13 +40,19 @@ Modular monolith with clear module boundaries and multi-tenant row-level isolati
 
 | Module | Purpose |
 |--------|---------|
+| Auth | JWT registration, login, role-based access (admin/provider/staff) |
 | Ingestion | Normalize clinical input (text, voice, images) via Claude Vision + transcription |
-| Coding Engine | AI-powered CDT/ICD-10 code selection with RAG from CDT knowledge base |
+| Coding Engine | AI-powered CDT/ICD-10 code selection with RAG from 315-code CDT knowledge base |
 | Claim Builder | Assemble claims with AI-generated payer-specific narratives |
 | Submission Gateway | Route claims to clearinghouses with idempotent retry |
-| Denial Management | Predict denials, generate appeals citing case law, send commissioner letters |
+| Denial Management | Predict denials, generate payer-specific appeals citing case law, send commissioner letters |
+| Denial Feedback | Learn from prior denials, track patterns per payer, auto-update rules |
+| EDI Layer | X12 837D claims, 270/271 eligibility, 835 ERA parsing (50 CARC codes), 26-payer directory |
+| Pre-Submission Validation | Check frequency rules, documentation, preauth, benefits before submitting |
+| Image Verification | Claude Vision verifies X-rays/photos support coded procedures |
+| Coding Update Agent | Monitors 7 sources for CDT/payer rule changes, AI-powered analysis |
 | PMS Adapters | Integrate with practice management systems (Open Dental, CSV import/export) |
-| Dashboard | React SPA for patients, claims, denials, and revenue cycle overview |
+| Dashboard | React PWA with voice dictation, image upload, mobile-responsive dark theme |
 
 ## Getting Started
 
@@ -107,14 +116,25 @@ cd frontend && npm test
 
 ## API Endpoints
 
-31 REST endpoints across 7 modules, all under the `/v1` prefix:
+51 REST endpoints across 12 modules, all under the `/v1` prefix (plus health check):
+
+### Auth (`/v1/auth`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/auth/register` | Register a new user |
+| POST | `/v1/auth/login` | Login, returns JWT token |
+| GET | `/v1/auth/me` | Get current authenticated user |
+| POST | `/v1/auth/invite` | Invite a user (admin only) |
 
 ### Patients (`/v1/patients`)
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v1/patients` | Create a patient |
-| GET | `/v1/patients` | List all patients |
+| GET | `/v1/patients` | List patients (supports `?q=` search) |
 | GET | `/v1/patients/{id}` | Get a patient |
+| GET | `/v1/patients/{id}/insurance` | List insurance plans |
+| POST | `/v1/patients/{id}/insurance` | Add insurance plan |
+| DELETE | `/v1/patients/{id}/insurance/{plan_id}` | Remove insurance plan |
 
 ### Encounters (`/v1/encounters`)
 | Method | Path | Description |
@@ -122,7 +142,12 @@ cd frontend && npm test
 | POST | `/v1/encounters/from-notes` | Parse clinical notes into structured encounter |
 | POST | `/v1/encounters/from-image` | Analyze x-ray/photo via Claude Vision |
 | POST | `/v1/encounters/from-voice` | Transcribe audio and parse encounter |
+| POST | `/v1/encounters/check-image-quality` | Check image quality before processing |
 | GET | `/v1/encounters/{id}` | Get an encounter |
+| POST | `/v1/encounters/{id}/verify-images` | Verify image supports coded procedures (AI Vision) |
+| POST | `/v1/encounters/{id}/check-documentation` | Check documentation completeness |
+| POST | `/v1/encounters/{id}/documentation-template` | Get smart documentation template |
+| POST | `/v1/encounters/{id}/validate` | Full pre-submission validation |
 
 ### Coding (`/v1/encounters`)
 | Method | Path | Description |
@@ -156,9 +181,23 @@ cd frontend && npm test
 | POST | `/v1/denials` | Record a denial |
 | GET | `/v1/denials` | List denials (filterable by status) |
 | GET | `/v1/denials/{id}` | Get a denial |
-| POST | `/v1/denials/{id}/generate-appeal` | AI-generate appeal letter with case law |
+| POST | `/v1/denials/{id}/generate-appeal` | AI-generate payer-specific appeal letter |
 | POST | `/v1/denials/{id}/send-commissioner-letter` | Generate and mail commissioner complaint |
 | GET | `/v1/denials/{id}/commissioner-letters` | List commissioner letters for a denial |
+
+### Settings (`/v1/settings`)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/v1/settings` | Get practice settings |
+| PUT | `/v1/settings` | Update practice settings |
+
+### Updates (`/v1/updates`) — Coding Update Agent
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/updates/check` | Check for coding updates from 7 sources |
+| GET | `/v1/updates/sources` | List monitored update sources |
+| GET | `/v1/updates/status` | Get update status |
+| POST | `/v1/updates/{title}/apply` | Mark an update as applied |
 
 ### PMS Integration (`/v1/pms`)
 | Method | Path | Description |
@@ -169,47 +208,76 @@ cd frontend && npm test
 | POST | `/v1/pms/import-patient` | Import patient from PMS into Buckteeth |
 | POST | `/v1/pms/import-encounter` | Import encounter from PMS into Buckteeth |
 
+### System
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+
 ## Project Structure
 
 ```
-src/buckteeth/
+src/buckteeth/                     # 77 Python files, 16,279 lines
 ├── main.py              # FastAPI app entrypoint + CORS
 ├── config.py            # Settings (Pydantic)
 ├── database.py          # Async SQLAlchemy engine and session
+├── auth.py              # JWT authentication, password hashing, role checks
 ├── tenant.py            # Multi-tenant context
-├── models/              # SQLAlchemy models (patient, encounter, claim, denial, etc.)
-├── api/                 # REST API routers and Pydantic schemas
+├── models/              # SQLAlchemy models (9 modules)
+│   ├── base.py          # Base model
+│   ├── patient.py       # Patient + insurance plans
+│   ├── encounter.py     # Clinical encounters + procedures
+│   ├── coding.py        # Coded encounters + procedures
+│   ├── claim.py         # Claims + procedures + narratives + attachments
+│   ├── denial.py        # Denials + appeals + commissioner letters
+│   ├── submission.py    # Submissions + ERA records
+│   ├── user.py          # Users (registration, roles, JWT)
+│   └── audit.py         # Audit logs
+├── api/                 # REST API routers and Pydantic schemas (12 modules)
 │   ├── deps.py          # Shared dependencies (tenant, session)
 │   ├── schemas.py       # All request/response schemas
-│   ├── patients.py      # Patient CRUD
-│   ├── encounters.py    # Encounter parsing (text, image, voice)
+│   ├── auth.py          # Register, login, invite, current user
+│   ├── patients.py      # Patient CRUD + insurance plans
+│   ├── encounters.py    # Encounter parsing (text, image, voice, quality check)
 │   ├── coding.py        # AI coding engine endpoints
 │   ├── claims.py        # Claim building, risk assessment, PDF
 │   ├── submissions.py   # Clearinghouse submission
 │   ├── denials.py       # Appeals, commissioner letters
+│   ├── settings.py      # Practice settings CRUD
+│   ├── updates.py       # Coding update agent endpoints
 │   └── pms.py           # PMS sync endpoints
-├── ingestion/           # Clinical input parsing + image analysis + transcription
-├── coding/              # AI coding engine with CDT knowledge base
+├── ingestion/           # Clinical input parsing + image analysis + quality + transcription
+├── coding/              # AI coding engine, image verifier, doc checker, pre-submission validator,
+│                        #   documentation_templates, update_agent
 ├── claims/              # Claim narrative generation
 ├── submission/          # Clearinghouse adapter pattern + gateway
-├── denials/             # Appeal generator, commissioner letters, mail service, risk scorer
+├── denials/             # Appeal generator, commissioner letters, risk scorer, feedback engine
 ├── forms/               # ADA dental claim form PDF generation (ReportLab)
+├── edi/                 # X12 837D, 270/271, 835, payer directory, clearinghouse adapters
 ├── pms/                 # PMS adapters (Mock, Open Dental, CSV)
-└── knowledge/           # CDT codes, payer rules, case law repository
+└── knowledge/           # CDT codes (315), payer rules, case law repository
 
-frontend/
+frontend/                # 23 TypeScript/TSX files
 ├── src/
+│   ├── App.tsx          # Router
+│   ├── main.tsx         # Entry point
+│   ├── speech.d.ts      # Web Speech API types
 │   ├── api/             # Typed fetch client + TypeScript interfaces
-│   │   ├── client.ts    # API functions for all 31 endpoints
+│   │   ├── client.ts    # API functions for all endpoints
 │   │   └── types.ts     # TypeScript types matching backend schemas
 │   ├── components/      # Shared UI components
-│   │   ├── Layout.tsx   # Sidebar navigation shell
-│   │   └── StatusBadge.tsx  # Color-coded status pill
+│   │   ├── Layout.tsx       # Sidebar navigation shell
+│   │   ├── StatusBadge.tsx  # Color-coded status pill
+│   │   ├── ToothChart.tsx   # Interactive 32-tooth chart
+│   │   ├── BenefitsEntry.tsx # Insurance benefits entry
+│   │   ├── PerioChart.tsx   # Periodontal charting
+│   │   └── ErrorBoundary.tsx # Crash fallback UI
 │   ├── pages/           # Route pages
-│   │   ├── Dashboard.tsx    # Summary cards + API health
-│   │   ├── Patients.tsx     # Patient list + create form
-│   │   ├── Claims.tsx       # Claims with status filtering + risk assessment
-│   │   └── Denials.tsx      # Denials list + AI appeal generation
+│   │   ├── Dashboard.tsx    # Dollar totals, recent activity
+│   │   ├── Encounters.tsx   # Core workflow: dictate/image → AI coding → validation → claim
+│   │   ├── Patients.tsx     # Patient list + search + create + insurance
+│   │   ├── Claims.tsx       # Expandable procedures, summary totals
+│   │   ├── Denials.tsx      # Card layout, 3-stage appeal workflow
+│   │   └── Setup.tsx        # Practice settings (persists to backend)
 │   └── __tests__/       # Vitest + React Testing Library tests
 ├── index.html
 ├── vite.config.ts       # Vite config with API proxy + Vitest
@@ -241,9 +309,15 @@ tests/                   # Backend tests (pytest, async)
 | 5 | Advanced Ingestion & Risk — image analysis, voice, risk scoring, PDF forms | Done |
 | 6 | PMS Adapters — Open Dental, CSV import/export, sync API | Done |
 | 7 | React Dashboard — frontend with patients, claims, denials pages | Done |
+| 8 | Phenomenal Problems — rebranding, dark theme, mobile PWA, voice dictation | Done |
+| 9 | EDI Insurance Layer — X12 837D/270/271/835, 26-payer directory, clearinghouse adapters | Done |
+| 10 | Denial Prevention — image verification, doc checker, pre-submission validator, feedback engine | Done |
+| 11 | Auth & Updates — JWT auth (register/login/roles), coding update agent (7 sources), practice settings | Done |
+| 12 | Appeal Workflow — payer-specific appeals, preview/edit/approve, card-based denials UI | Done |
 
 ## Documentation
 
+- [Complete System Documentation](docs/DEMO-CHECKLIST.md)
 - [Design Spec](docs/superpowers/specs/2026-03-12-dental-coding-agent-design.md)
 - [Phase 1 Plan: Foundation](docs/superpowers/plans/2026-03-12-phase1-foundation.md)
 - [Phase 2 Plan: Claim Builder](docs/superpowers/plans/2026-03-12-phase2-claim-builder.md)

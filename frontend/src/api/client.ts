@@ -11,9 +11,16 @@ import type {
   AppealDocument,
   GenerateAppealRequest,
   HealthResponse,
+  DocumentationCheck,
+  ValidationResult,
+  ImageQualityResult,
+  DocumentationTemplate,
+  InsurancePlanCreate,
+  InsurancePlan,
+  PracticeSettings,
 } from "./types";
 
-const BASE = "";
+const BASE = "/bt";
 const DEFAULT_TENANT = "00000000-0000-0000-0000-000000000001";
 
 function headers(): HeadersInit {
@@ -51,6 +58,32 @@ export const createPatient = (data: PatientCreate) =>
 
 export const getPatient = (id: string) => request<Patient>(`/v1/patients/${id}`);
 
+// ── Insurance Plans ──────────────────────────────────────────────────
+
+export const addInsurancePlan = (patientId: string, data: InsurancePlanCreate) =>
+  request<InsurancePlan>(`/v1/patients/${patientId}/insurance`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export const listInsurancePlans = (patientId: string) =>
+  request<InsurancePlan[]>(`/v1/patients/${patientId}/insurance`);
+
+export const deleteInsurancePlan = (patientId: string, planId: string) =>
+  request<void>(`/v1/patients/${patientId}/insurance/${planId}`, {
+    method: "DELETE",
+  });
+
+// ── Practice Settings ────────────────────────────────────────────────
+
+export const getSettings = () => request<PracticeSettings>("/v1/settings");
+
+export const updateSettings = (data: PracticeSettings) =>
+  request<PracticeSettings>("/v1/settings", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
 // ── Encounters ───────────────────────────────────────────────────────
 
 export const createEncounterFromNotes = (data: EncounterFromNotesRequest) =>
@@ -58,6 +91,118 @@ export const createEncounterFromNotes = (data: EncounterFromNotesRequest) =>
     method: "POST",
     body: JSON.stringify(data),
   });
+
+export const createEncounterFromImage = (
+  patientId: string,
+  providerName: string,
+  dateOfService: string,
+  image: File,
+  context?: string,
+) => {
+  const formData = new FormData();
+  formData.append("patient_id", patientId);
+  formData.append("provider_name", providerName);
+  formData.append("date_of_service", dateOfService);
+  formData.append("image", image);
+  if (context) formData.append("context", context);
+
+  // Don't set Content-Type — browser sets it with boundary for multipart
+  return fetch(`${BASE}/v1/encounters/from-image`, {
+    method: "POST",
+    headers: {
+      "X-Tenant-ID": localStorage.getItem("tenantId") ?? DEFAULT_TENANT,
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<Encounter>;
+  });
+};
+
+export const verifyImages = (encounterId: string, image: File) => {
+  const formData = new FormData();
+  formData.append("image", image);
+
+  return fetch(`${BASE}/v1/encounters/${encounterId}/verify-images`, {
+    method: "POST",
+    headers: {
+      "X-Tenant-ID": localStorage.getItem("tenantId") ?? DEFAULT_TENANT,
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<ImageVerification>;
+  });
+};
+
+export const getDocumentationTemplate = (encounterId: string) =>
+  request<DocumentationTemplate>(`/v1/encounters/${encounterId}/documentation-template`, {
+    method: "POST",
+  });
+
+export const checkImageQuality = (image: File) => {
+  const formData = new FormData();
+  formData.append("image", image);
+
+  return fetch(`${BASE}/v1/encounters/check-image-quality`, {
+    method: "POST",
+    headers: {
+      "X-Tenant-ID": localStorage.getItem("tenantId") ?? DEFAULT_TENANT,
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<ImageQualityResult>;
+  });
+};
+
+export const validateEncounter = (encounterId: string, hasImages: boolean, payerId?: string) => {
+  const formData = new FormData();
+  formData.append("has_images", hasImages ? "true" : "false");
+  if (payerId) formData.append("payer_id", payerId);
+
+  return fetch(`${BASE}/v1/encounters/${encounterId}/validate`, {
+    method: "POST",
+    headers: {
+      "X-Tenant-ID": localStorage.getItem("tenantId") ?? DEFAULT_TENANT,
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<ValidationResult>;
+  });
+};
+
+export const checkDocumentation = (encounterId: string, hasImages: boolean) => {
+  const formData = new FormData();
+  formData.append("has_images", hasImages ? "true" : "false");
+
+  return fetch(`${BASE}/v1/encounters/${encounterId}/check-documentation`, {
+    method: "POST",
+    headers: {
+      "X-Tenant-ID": localStorage.getItem("tenantId") ?? DEFAULT_TENANT,
+    },
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<DocumentationCheck>;
+  });
+};
 
 export const getEncounter = (id: string) =>
   request<Encounter>(`/v1/encounters/${id}`);

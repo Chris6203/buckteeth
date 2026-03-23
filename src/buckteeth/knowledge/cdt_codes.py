@@ -72,32 +72,81 @@ class CDTCodeRepository:
         return [c for c in self._codes.values() if c.category == cat]
 
     def get_candidates(
-        self, procedure_description: str, *, max_results: int = 10
+        self, procedure_description: str, *, max_results: int = 15
     ) -> list[CDTCode]:
         """Return scored candidate codes for a procedure description.
 
-        Scoring is based on token overlap between the procedure description
-        and each code's description + common scenarios.  Results are returned
-        in descending score order, up to *max_results*.
+        Uses token overlap scoring weighted by match quality. Also does
+        substring matching on key terms (crown, composite, extraction, etc.)
+        to ensure important candidates aren't missed by tokenization.
         """
-        tokens = set(procedure_description.lower().split())
+        query_lower = procedure_description.lower()
+        tokens = set(query_lower.split())
         if not tokens:
             return []
 
+        # Key term boosting — ensure category matches surface
+        boosts: dict[str, list[str]] = {
+            "crown": ["D2740", "D2750", "D2751", "D2752", "D2790", "D2791", "D2792", "D2950"],
+            "porcelain": ["D2740", "D2750", "D2751"],
+            "ceramic": ["D2740"],
+            "pfm": ["D2750"],
+            "core buildup": ["D2950", "D2952"],
+            "buildup": ["D2950"],
+            "root canal": ["D3310", "D3320", "D3330"],
+            "endodontic": ["D3310", "D3320", "D3330"],
+            "scaling": ["D4341", "D4342"],
+            "root planing": ["D4341", "D4342"],
+            "srp": ["D4341", "D4342"],
+            "deep cleaning": ["D4341", "D4342"],
+            "prophy": ["D1110", "D1120"],
+            "cleaning": ["D1110", "D1120", "D4910"],
+            "extraction": ["D7140", "D7210"],
+            "surgical extract": ["D7210"],
+            "impacted": ["D7220", "D7230", "D7240"],
+            "composite": ["D2330", "D2331", "D2332", "D2391", "D2392", "D2393", "D2394"],
+            "filling": ["D2140", "D2150", "D2160", "D2330", "D2391"],
+            "amalgam": ["D2140", "D2150", "D2160", "D2161"],
+            "denture": ["D5110", "D5120", "D5130", "D5140"],
+            "implant": ["D6010", "D6056", "D6058", "D6059"],
+            "bitewing": ["D0272", "D0274"],
+            "periapical": ["D0220", "D0230"],
+            "panoramic": ["D0330"],
+            "veneer": ["D2960", "D2962"],
+            "sealant": ["D1351"],
+            "fluoride": ["D1206", "D1208"],
+        }
+
+        boosted_codes: set[str] = set()
+        for term, codes in boosts.items():
+            if term in query_lower:
+                boosted_codes.update(codes)
+
         scored: list[tuple[float, CDTCode]] = []
         for cdt in self._codes.values():
-            searchable_tokens = set(
-                (
-                    " ".join(
-                        [cdt.description.lower()]
-                        + [s.lower() for s in cdt.common_scenarios]
-                    )
-                ).split()
+            searchable = " ".join(
+                [cdt.description.lower(), cdt.code.lower()]
+                + [s.lower() for s in cdt.common_scenarios]
             )
+            searchable_tokens = set(searchable.split())
+
             overlap = len(tokens & searchable_tokens)
-            if overlap > 0:
-                score = overlap / max(len(tokens), len(searchable_tokens))
-                scored.append((score, cdt))
+            if overlap == 0 and cdt.code not in boosted_codes:
+                continue
+
+            # Score: overlap relative to query size (not code description size)
+            score = overlap / len(tokens) if tokens else 0
+
+            # Boost if code is in the boosted set
+            if cdt.code in boosted_codes:
+                score += 0.5
+
+            # Boost substring matches in description
+            for token in tokens:
+                if len(token) >= 4 and token in searchable:
+                    score += 0.1
+
+            scored.append((score, cdt))
 
         scored.sort(key=lambda t: t[0], reverse=True)
         return [cdt for _, cdt in scored[:max_results]]

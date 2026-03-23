@@ -7,13 +7,51 @@ export interface PatientCreate {
   gender: string;
 }
 
+export interface InsurancePlan {
+  id: string;
+  payer_name: string;
+  payer_id: string;
+  subscriber_id: string;
+  group_number: string;
+  plan_type: string;
+}
+
+export interface InsurancePlanCreate {
+  payer_name: string;
+  payer_id: string;
+  subscriber_id: string;
+  group_number: string;
+  plan_type: string;
+}
+
 export interface Patient {
   id: string;
   first_name: string;
   last_name: string;
   date_of_birth: string;
   gender: string;
+  insurance_plans?: InsurancePlan[];
   created_at: string | null;
+}
+
+export interface PracticeSettings {
+  practice_name: string;
+  provider_name: string;
+  provider_credentials: string;
+  npi: string;
+  tax_id: string;
+  taxonomy_code: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  email: string;
+  clearinghouse_name: string;
+  clearinghouse_account_id: string;
+  clearinghouse_environment: string;
+  fee_schedule: Record<string, number>;
 }
 
 // ── Encounter ────────────────────────────────────────────────────────
@@ -155,6 +193,110 @@ export interface AppealDocument {
 export interface GenerateAppealRequest {
   clinical_notes: string;
   state: string;
+}
+
+// ── Documentation Template ───────────────────────────────────────────
+
+export interface DocumentationPrompt {
+  category: string;
+  label: string;
+  description: string;
+  required: boolean;
+  for_procedure: string;
+  input_type: string;
+  options: string[];
+}
+
+export interface DocumentationTemplate {
+  prompts: DocumentationPrompt[];
+  summary: string;
+  required_count: number;
+  total_count: number;
+}
+
+// ── Image Quality ────────────────────────────────────────────────────
+
+export interface ImageQualityIssue {
+  code: string;
+  severity: "error" | "warning";
+  message: string;
+  suggestion: string;
+}
+
+export interface ImageQualityResult {
+  passed: boolean;
+  issues: ImageQualityIssue[];
+  metadata: Record<string, unknown>;
+  error_count: number;
+  warning_count: number;
+}
+
+// ── Pre-Submission Validation ────────────────────────────────────────
+
+export interface ValidationIssue {
+  code: string;
+  severity: "block" | "warn" | "info";
+  category: string;
+  message: string;
+  cdt_code: string | null;
+  recommendation: string | null;
+  denial_probability: number;
+}
+
+export interface ValidationResult {
+  issues: ValidationIssue[];
+  passed: boolean;
+  overall_denial_risk: number;
+  summary: string;
+  blocker_count: number;
+  warning_count: number;
+}
+
+// ── Documentation Check ──────────────────────────────────────────────
+
+export interface DocumentationAlert {
+  cdt_code: string;
+  cdt_description: string;
+  missing_type: string;
+  label: string;
+  description: string;
+  severity: "required" | "recommended";
+  tooth_number: string | null;
+}
+
+export interface DocumentationCheck {
+  alerts: DocumentationAlert[];
+  complete: boolean;
+  summary: string;
+}
+
+// ── Image Verification ───────────────────────────────────────────────
+
+export interface ProcedureVerification {
+  cdt_code: string;
+  status: "supported" | "unsupported" | "inconclusive";
+  confidence: number;
+  finding: string;
+  concern: string | null;
+  recommendation: string | null;
+}
+
+export interface MissedFinding {
+  description: string;
+  tooth_number: string | null;
+  suggested_code: string | null;
+  suggested_description: string | null;
+  reasoning: string | null;
+}
+
+export interface ImageVerification {
+  verifications: ProcedureVerification[];
+  missed_findings: MissedFinding[];
+  overall_assessment: {
+    documentation_strength: "strong" | "moderate" | "weak";
+    denial_risk: "low" | "medium" | "high";
+    summary: string;
+  };
 }
 
 // ── Health ────────────────────────────────────────────────────────────

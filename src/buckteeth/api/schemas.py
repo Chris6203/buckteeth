@@ -21,6 +21,7 @@ class PatientResponse(BaseModel):
     last_name: str
     date_of_birth: str
     gender: str
+    insurance_plans: list["InsurancePlanResponse"] = []
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}

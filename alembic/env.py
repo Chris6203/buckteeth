@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from buckteeth.config import settings
 from buckteeth.models.base import Base
-from buckteeth.models import patient, encounter, coding, audit, claim, submission, denial  # noqa: F401 — register models
+from buckteeth.models import patient, encounter, coding, audit, claim, submission, denial, user  # noqa: F401 — register models
 
 config = context.config
 if config.config_file_name is not None:

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from buckteeth.api.deps import get_session, get_tenant_id
+from buckteeth.config import settings
 from buckteeth.api.schemas import (
     AppealDocumentResponse,
     CommissionerLetterAPIResponse,
@@ -159,7 +160,7 @@ async def generate_appeal(
     )
 
     # Generate appeal via AI
-    appeal_response = await AppealGenerator(api_key="placeholder").generate_appeal(appeal_request)
+    appeal_response = await AppealGenerator(api_key=settings.anthropic_api_key).generate_appeal(appeal_request)
 
     # Save AppealDocument to DB
     appeal_doc = AppealDocument(
@@ -198,7 +199,7 @@ async def generate_appeal(
             state=body.state,
             appeal_already_filed=True,
         )
-        comm_response = await CommissionerLetterGenerator(api_key="placeholder").generate(comm_request)
+        comm_response = await CommissionerLetterGenerator(api_key=settings.anthropic_api_key).generate(comm_request)
         mail_service = MockMailService()
         mail_result = await mail_service.send_letter(
             to_name=comm_response.commissioner_name,
@@ -290,7 +291,7 @@ async def send_commissioner_letter(
     )
 
     # Generate commissioner letter via AI
-    letter_response = await CommissionerLetterGenerator(api_key="placeholder").generate(letter_request)
+    letter_response = await CommissionerLetterGenerator(api_key=settings.anthropic_api_key).generate(letter_request)
 
     # Send via mail service
     mail_service = MockMailService()

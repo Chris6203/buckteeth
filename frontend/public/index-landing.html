@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phenomenal Problems — AI-Powered Dental Insurance Coding</title>
+  <meta name="description" content="Stop losing revenue to coding errors and claim denials. AI codes your procedures, catches documentation gaps, and fights denials — so you get paid correctly, every time.">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0F111A;
+      --card: #1A1A2E;
+      --cyan: #00D4FF;
+      --lime: #00FF88;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; line-height: 1.2; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: rgba(15,17,26,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.125rem;
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      background: var(--cyan);
+      color: var(--bg);
+      font-weight: 600;
+      font-size: 0.875rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.88; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 160px 0 120px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 600px;
+      background: radial-gradient(ellipse, rgba(0,212,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: var(--cyan);
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+    .hero-tagline {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      max-width: 680px;
+      margin: 0 auto 40px;
+      font-size: 1.075rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: var(--cyan);
+      color: var(--bg);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: transparent;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      border: 1px solid var(--border-hover);
+      border-radius: 10px;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--cyan); background: rgba(0,212,255,0.05); }
+
+    /* ── SECTIONS ── */
+    section { padding: 100px 0; }
+    .section-label {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      max-width: 600px;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 56px; }
+    .section-header.center { text-align: center; }
+    .section-header.center .section-desc { margin: 0 auto; }
+
+    /* ── HOW IT WORKS ── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .steps-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 540px) { .steps-grid { grid-template-columns: 1fr; } }
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 24px;
+      position: relative;
+      transition: border-color 0.25s;
+    }
+    .step-card:hover { border-color: var(--border-hover); }
+    .step-num {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 0.75rem;
+      color: var(--cyan);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-num::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .step-icon {
+      width: 44px; height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,212,255,0.08);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      color: var(--cyan);
+    }
+    .step-icon svg { width: 22px; height: 22px; }
+    .step-card h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .step-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── FEATURES ── */
+    .features-section { background: linear-gradient(180deg, var(--bg) 0%, rgba(26,26,46,0.4) 50%, var(--bg) 100%); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 540px) { .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 24px;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .feature-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+    .feature-icon {
+      width: 42px; height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,212,255,0.08);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      color: var(--cyan);
+    }
+    .feature-icon svg { width: 20px; height: 20px; }
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── NUMBERS ── */
+    .numbers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .numbers-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 540px) { .numbers-grid { grid-template-columns: 1fr; } }
+    .number-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 36px 28px;
+      text-align: center;
+    }
+    .number-card .big {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      color: var(--lime);
+      margin-bottom: 8px;
+    }
+    .number-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── PRACTICE ── */
+    .practice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 640px) { .practice-grid { grid-template-columns: 1fr; } }
+    .practice-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 28px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      transition: border-color 0.25s;
+    }
+    .practice-card:hover { border-color: var(--border-hover); }
+    .practice-icon {
+      flex-shrink: 0;
+      width: 44px; height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,255,136,0.08);
+      border-radius: 10px;
+      color: var(--lime);
+    }
+    .practice-icon svg { width: 22px; height: 22px; }
+    .practice-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .practice-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      text-align: center;
+      padding: 80px 0 100px;
+    }
+    .cta-banner h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .cta-banner p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 36px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+    footer .inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    footer .brand {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    footer a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    footer a:hover { text-decoration: underline; }
+    footer .copy {
+      font-size: 0.8rem;
+      color: #475569;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="inner">
+    <a href="#" class="nav-logo">PHENOMENAL PROBLEMS</a>
+    <a href="/bt/" class="nav-cta">Launch App
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-3.96a.75.75 0 111.06-1.06l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 11-1.06-1.06l3.96-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-logo">PHENOMENAL PROBLEMS</div>
+    <div class="hero-tagline">AI-Powered Dental Insurance Coding</div>
+    <p class="hero-sub">Stop losing revenue to coding errors and claim denials. Our AI codes your procedures, catches documentation gaps, and fights denials &mdash; so you get paid correctly, every time.</p>
+    <div class="hero-actions">
+      <a href="/bt/" class="btn-primary">Launch App
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-3.96a.75.75 0 111.06-1.06l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 11-1.06-1.06l3.96-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+      </a>
+      <a href="#how-it-works" class="btn-secondary">See How It Works
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-3.96a.75.75 0 111.06 1.06l-5.25 5.25a.75.75 0 01-1.06 0l-5.25-5.25a.75.75 0 111.06-1.06l3.96 3.96V3.75A.75.75 0 0110 3z" clip-rule="evenodd"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-header center">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">From Patient Visit to Paid Claim</h2>
+      <p class="section-desc">Four steps. Under 30 seconds. No more manual code lookups or missed revenue.</p>
+    </div>
+    <div class="steps-grid">
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-num">STEP 01</div>
+        <div class="step-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+        </div>
+        <h3>Dictate or Type</h3>
+        <p>After seeing a patient, dictate clinical notes on your tablet or phone. Natural language — no special format needed.</p>
+      </div>
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-num">STEP 02</div>
+        <div class="step-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"/></svg>
+        </div>
+        <h3>AI Codes It</h3>
+        <p>AI parses your notes, identifies procedures, and suggests CDT codes with confidence scores.</p>
+      </div>
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-num">STEP 03</div>
+        <div class="step-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+        </div>
+        <h3>Smart Validation</h3>
+        <p>Checks for missing X-rays, frequency violations, preauth requirements, and known denial patterns.</p>
+      </div>
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-num">STEP 04</div>
+        <div class="step-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        </div>
+        <h3>Claim Generated</h3>
+        <p>Approve and a complete insurance claim is created with proper codes, fees, and narratives.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- What Makes Us Different -->
+<section class="features-section">
+  <div class="container">
+    <div class="section-header center">
+      <div class="section-label">What Makes Us Different</div>
+      <h2 class="section-title">Built for Dental, Not Retrofitted</h2>
+      <p class="section-desc">Every feature purpose-built around the realities of dental insurance coding and claim submission.</p>
+    </div>
+    <div class="features-grid">
+      <!-- 314 CDT Codes -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
+        </div>
+        <h3>314 CDT Codes</h3>
+        <p>Complete 2026 code knowledge base with bundling rules, frequency limits, and confusion codes.</p>
+      </div>
+      <!-- 26 Insurance Payers -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21"/></svg>
+        </div>
+        <h3>26 Insurance Payers</h3>
+        <p>Pre-configured with real EDI payer IDs, frequency rules, and preauth requirements for all major dental insurers.</p>
+      </div>
+      <!-- Image Verification -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3>Image Verification</h3>
+        <p>Claude Vision analyzes X-rays and photos to verify they support coded procedures.</p>
+      </div>
+      <!-- Denial Prevention -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z"/></svg>
+        </div>
+        <h3>Denial Prevention</h3>
+        <p>Pre-submission validator catches issues before they become denials. Learns from past denials to get smarter.</p>
+      </div>
+      <!-- Voice Dictation -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"/></svg>
+        </div>
+        <h3>Voice Dictation</h3>
+        <p>Speak naturally on any device. Works on phones, tablets, and desktops.</p>
+      </div>
+      <!-- Appeal Generation -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9.75m7.5 3H9.75M8.25 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        </div>
+        <h3>Appeal Generation</h3>
+        <p>When denials happen, AI generates formal appeal letters with case law citations in seconds.</p>
+      </div>
+      <!-- Smart Templates -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+        </div>
+        <h3>Smart Templates</h3>
+        <p>Auto-detects what documentation each procedure needs and prompts the dentist for exactly the right info.</p>
+      </div>
+      <!-- Real-time Quality Check -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg>
+        </div>
+        <h3>Real-time Quality Check</h3>
+        <p>Instant image validation catches corrupt, low-res, or wrong-format files before they're submitted.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- The Numbers -->
+<section>
+  <div class="container">
+    <div class="section-header center">
+      <div class="section-label">The Numbers</div>
+      <h2 class="section-title">The Problem Is Bigger Than You Think</h2>
+      <p class="section-desc">Dental practices lose significant revenue to preventable coding and documentation issues.</p>
+    </div>
+    <div class="numbers-grid">
+      <div class="number-card">
+        <div class="big">50%</div>
+        <p>of basic/major claims get pended or denied initially</p>
+      </div>
+      <div class="number-card">
+        <div class="big">$50-150K</div>
+        <p>average revenue lost per practice per year from coding errors</p>
+      </div>
+      <div class="number-card">
+        <div class="big">40%+</div>
+        <p>SRP claims denied without proper periodontal charting</p>
+      </div>
+      <div class="number-card">
+        <div class="big">&lt;&nbsp;30 sec</div>
+        <p>from dictation to AI-coded claim</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- For Your Practice -->
+<section>
+  <div class="container">
+    <div class="section-header center">
+      <div class="section-label">For Your Practice</div>
+      <h2 class="section-title">Ready When You Are</h2>
+      <p class="section-desc">No complex onboarding. No multi-month implementation. Start coding smarter today.</p>
+    </div>
+    <div class="practice-grid">
+      <!-- Works Immediately -->
+      <div class="practice-card">
+        <div class="practice-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+        </div>
+        <div>
+          <h3>Works Immediately</h3>
+          <p>AI coding, image analysis, and validation work with zero setup. Log in and start coding your first claim.</p>
+        </div>
+      </div>
+      <!-- Your Data, Your Control -->
+      <div class="practice-card">
+        <div class="practice-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+        </div>
+        <div>
+          <h3>Your Data, Your Control</h3>
+          <p>Practice info, fee schedules, and patient data stay on your server. You own everything.</p>
+        </div>
+      </div>
+      <!-- Integrates With Your PMS -->
+      <div class="practice-card">
+        <div class="practice-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.915-3.313a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364l1.757 1.757" transform="translate(2,2) scale(0.85)"/></svg>
+        </div>
+        <div>
+          <h3>Integrates With Your PMS</h3>
+          <p>Designed to work alongside Open Dental, Dentrix, Eaglesoft, and others.</p>
+        </div>
+      </div>
+      <!-- 26 Payers Ready -->
+      <div class="practice-card">
+        <div class="practice-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <h3>26 Payers Ready</h3>
+          <p>Delta Dental, MetLife, Cigna, Aetna, Guardian, UHC, and 20 more pre-configured and ready to go.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="cta-banner">
+  <div class="container">
+    <h2>Start Getting Paid What You&rsquo;re Owed</h2>
+    <p>AI-powered coding and validation that catches what humans miss.</p>
+    <a href="/bt/" class="btn-primary">Launch App
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638l-3.96-3.96a.75.75 0 111.06-1.06l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 11-1.06-1.06l3.96-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="inner">
+    <span class="brand">Built by Phenomenal Problems</span>
+    <a href="/bt/">Launch App</a>
+    <span class="copy">&copy; 2026 Phenomenal Problems</span>
+  </div>
+</footer>
+
+</body>
+</html>
