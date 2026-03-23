@@ -32,7 +32,7 @@ Phenomenal Problems is an AI-powered dental insurance coding and revenue cycle m
 ### Infrastructure
 - [x] FastAPI backend (uvicorn, port 8000, systemd managed)
 - [x] React + TypeScript + Vite frontend (dark theme, cyan/navy branding)
-- [x] PostgreSQL 16 database with demo data (18 tables)
+- [x] PostgreSQL 16 database with demo data (20 tables)
 - [x] Nginx reverse proxy (domain + IP path routing)
 - [x] HTTPS with Let's Encrypt (auto-renewing, expires June 2026)
 - [x] Domain: phenomenalproblems.com (DNS via GoDaddy)
@@ -145,11 +145,40 @@ Phenomenal Problems is an AI-powered dental insurance coding and revenue cycle m
 - [x] Practice-level reporting (worst payers, most denied codes, revenue impact)
 - [x] Trend tracking (improving/worsening/stable)
 
+### Provider Management
+- [x] Provider model, API (CRUD + deactivate), 5 endpoints
+- [x] Provider dropdown on encounters (replaces free-text input)
+- [x] 3 demo providers seeded (Mitchell/General, Park/Prostho, Torres/OralSurg)
+
 ### Bug Fixes Applied
 - [x] Create patient lazy load bug fixed
 - [x] Crown code RAG retrieval fixed (keyword boosting)
 - [x] Appeal generator was using placeholder API key — fixed
-- [x] Appeal generator JSON parsing — markdown fences handling fixed
+- [x] Appeal generator JSON parsing — markdown fences handling in all 6 AI modules
+- [x] Empty notes validation (returns 400 not 500)
+- [x] PMS import patient lazy load fixed
+- [x] Fee schedule wired into claim creation (53 codes)
+- [x] N362 action plan gave wrong advice (perio charting vs tooth number) — fixed
+- [x] Cigna appeal deadline showed 180 instead of 90 days — fixed (bidirectional payer search)
+- [x] Appeal letter dates hallucinated — fixed (today's date injected into prompt)
+- [x] Appeal letter placeholders — fixed (practice info auto-populated, no brackets)
+- [x] Duplicate D2950 on crown encounters — fixed (coding engine deduplication)
+- [x] D3220 (primary tooth) instead of D3320 (premolar) for tooth #4 — fixed
+- [x] D7210 up-coding for simple extractions — fixed (explicit prompt guidance)
+- [x] D1110 instead of D1120 for child patients — fixed
+- [x] Missing D0120 on recall visits — fixed
+- [x] FMX + Panoramic bundling rule added
+- [x] React key warning on Claims page
+- [x] Provider name inconsistency in demo data
+
+### Medical-Grade Test Results (2026-03-23)
+- [x] 10/10 AI clinical scenarios PASS
+- [x] 6/6 denial/appeal system tests PASS
+- [x] 30/30 data accuracy checks PASS
+- [x] 50/50 top CDT codes verified accurate
+- [x] All bundling rules verified (8/8)
+- [x] All payer IDs verified
+- [x] All CARC codes verified against X12.org
 
 ---
 
@@ -164,7 +193,7 @@ Nginx (port 80/443)
     ├─ phenomenalproblems.com/bt/*  → Same (domain route)
     └─ /*                           → Marketing landing page / SmileTryte app (port 3000)
 
-FastAPI Backend (port 8000) — 77 Python files, 16,279 lines
+FastAPI Backend (port 8000) — 79 Python files, 17,316 lines
     ├─ Auth Layer
     │   ├─ JWT token authentication
     │   ├─ Role-based access (admin, provider, staff)
@@ -187,13 +216,13 @@ FastAPI Backend (port 8000) — 77 Python files, 16,279 lines
     │   └─ Clearinghouse adapters
     ├─ Coding Update Agent (7 monitored sources)
     ├─ PostgreSQL 16
-    │   └─ 18 tables (patients, encounters, claims, denials, users, etc.)
+    │   └─ 20 tables (patients, encounters, claims, denials, users, etc.)
     └─ Mock Adapters (PMS, clearinghouse)
 ```
 
 ---
 
-## API Endpoints (51 total)
+## API Endpoints (61 total)
 
 ### Auth
 - `POST /v1/auth/register` — Register new user
@@ -286,7 +315,7 @@ Each payer has: real EDI payer ID, frequency rules per CDT code, pre-auth requir
 
 ```
 /opt/buckteeth/                    # Production deployment
-├── src/buckteeth/                 # 77 Python files, 16,279 lines
+├── src/buckteeth/                 # 79 Python files, 17,316 lines
 │   ├── main.py                    # FastAPI app
 │   ├── config.py                  # Settings (DATABASE_URL, API keys)
 │   ├── database.py                # Async SQLAlchemy

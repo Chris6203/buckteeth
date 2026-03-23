@@ -25,7 +25,7 @@ Buckteeth takes clinical input in any form — structured data, free-text notes,
 
 ## Tech Stack
 
-- **Backend:** Python 3.11+ (FastAPI, SQLAlchemy 2.0 async, Pydantic v2) — 77 files, 16,279 lines
+- **Backend:** Python 3.11+ (FastAPI, SQLAlchemy 2.0 async, Pydantic v2) — 79 files, 17,316 lines
 - **Frontend:** React 18 (TypeScript, Vite, Tailwind CSS, React Router v6) — 23 files
 - **Database:** PostgreSQL 16 (async via asyncpg; 18 tables)
 - **AI:** Claude (Anthropic SDK) — coding suggestions, appeal generation, risk assessment
@@ -116,7 +116,7 @@ cd frontend && npm test
 
 ## API Endpoints
 
-51 REST endpoints across 12 modules, all under the `/v1` prefix (plus health check):
+61 REST endpoints across 13 modules, all under the `/v1` prefix (plus health check):
 
 ### Auth (`/v1/auth`)
 | Method | Path | Description |
@@ -198,6 +198,15 @@ cd frontend && npm test
 | GET | `/v1/updates/sources` | List monitored update sources |
 | GET | `/v1/updates/status` | Get update status |
 | POST | `/v1/updates/{title}/apply` | Mark an update as applied |
+
+### Providers (`/v1/providers`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/providers` | Create a provider |
+| GET | `/v1/providers` | List providers |
+| GET | `/v1/providers/{id}` | Get a provider |
+| PUT | `/v1/providers/{id}` | Update a provider |
+| DELETE | `/v1/providers/{id}` | Deactivate a provider |
 
 ### PMS Integration (`/v1/pms`)
 | Method | Path | Description |
