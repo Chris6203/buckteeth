@@ -33,6 +33,20 @@ class CodingEngine:
             suggestions = await self._selector.select_codes(procedure)
             all_suggestions.extend(suggestions)
 
+        # Step 1b: Deduplicate — same CDT code + same tooth = keep highest confidence
+        seen: dict[tuple[str, str | None], int] = {}  # (code, tooth) -> index
+        deduped = []
+        for s in all_suggestions:
+            key = (s.cdt_code, s.tooth_number)
+            if key in seen:
+                existing_idx = seen[key]
+                if s.confidence_score > deduped[existing_idx].confidence_score:
+                    deduped[existing_idx] = s
+            else:
+                seen[key] = len(deduped)
+                deduped.append(s)
+        all_suggestions = deduped
+
         # Step 2: Collect all codes for bundling checks
         all_codes = [s.cdt_code for s in all_suggestions]
 

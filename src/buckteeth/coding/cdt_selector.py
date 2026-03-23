@@ -31,7 +31,10 @@ CDT coding rules:
 - Core buildup is D2950. Always code separately from the crown.
 - Prophylaxis: D1110 for adults (14+), D1120 for children (<14).
 - SRP is coded per quadrant, by tooth count (1-3 teeth = D4342, 4+ teeth = D4341).
-- Root canal: D3310 anterior, D3320 premolar, D3330 molar. Code by tooth type.
+- Root canal: D3310 anterior (teeth 6-11, 22-27), D3320 premolar (teeth 4,5,12,13,20,21,28,29), \
+  D3330 molar (teeth 1-3,14-16,17-19,30-32). Code by tooth type based on number.
+- CRITICAL: Teeth numbered 1-32 are PERMANENT teeth. D3220 (pulpectomy) is for PRIMARY \
+  teeth only (lettered A-T). Never use D3220 for a numbered tooth like #4.
 - Only suggest codes that are the BEST match. Assign confidence 85-100 for \
   clear matches, 60-84 for likely matches, below 60 for alternatives.
 - You may suggest codes NOT in the candidate list if you are confident they are correct.

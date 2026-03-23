@@ -52,18 +52,32 @@ class PayerDirectory:
         return None
 
     def search(self, query: str) -> list[Payer]:
-        """Return payers whose name or short_name matches *query* (case-insensitive, bidirectional)."""
+        """Return payers whose name or short_name matches *query* (case-insensitive, bidirectional).
+
+        Also matches when every significant word in the payer's short_name
+        appears in the query (e.g. "Delta Dental Premier" matches "Delta CA"
+        because the core identifier words overlap).
+        """
         q = query.lower()
-        return [
-            p
-            for p in self._payers.values()
-            if q in p.name.lower()
-            or p.name.lower() in q
-            or q in p.short_name.lower()
-            or p.short_name.lower() in q
-            or q in p.payer_id.lower()
-            or q in p.edi_payer_id.lower()
-        ]
+        _stop = {"of", "the", "and", "a", "an", "in", "for"}
+        q_words = set(q.split()) - _stop
+
+        def _matches(p: Payer) -> bool:
+            if q in p.name.lower() or p.name.lower() in q:
+                return True
+            if q in p.short_name.lower() or p.short_name.lower() in q:
+                return True
+            if q in p.payer_id.lower() or q in p.edi_payer_id.lower():
+                return True
+            # Word-overlap: check if the core identifying words overlap enough
+            name_words = set(p.name.lower().split()) - _stop
+            overlap = q_words & name_words
+            # Match if at least 2 significant words overlap (e.g. "delta" + "dental")
+            if len(overlap) >= 2:
+                return True
+            return False
+
+        return [p for p in self._payers.values() if _matches(p)]
 
     def list_all(self) -> list[Payer]:
         """Return every payer in the directory, sorted by name."""

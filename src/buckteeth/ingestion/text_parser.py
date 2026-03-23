@@ -31,8 +31,12 @@ IMPORTANT clinical billing rules:
   Only code D7210 (surgical) if the notes explicitly mention bone removal, flap, or sectioning.
 - A crown impression/final impression is part of the crown prep procedure — do NOT code \
   it separately as diagnostic casts (D0470) unless the notes specifically say "diagnostic casts."
-- Do NOT duplicate procedures. If core buildup is mentioned once, list it once even if \
-  the crown prep notes mention the tooth condition twice.
+- Do NOT duplicate procedures. If core buildup is mentioned once, list it once. \
+  Do NOT create a separate procedure for the description of WHY a procedure was needed \
+  (e.g., "large failing MOD amalgam" is the REASON for the crown, not a separate procedure).
+- CRITICAL tooth numbering: Teeth #1-32 are PERMANENT (adult) teeth in universal numbering. \
+  Tooth #4 is the upper right second premolar (permanent), NOT a primary tooth. \
+  Primary teeth use letters A-T, not numbers. Never confuse numbered teeth with primary dentition.
 
 Return your response as JSON with the following structure:
 {
