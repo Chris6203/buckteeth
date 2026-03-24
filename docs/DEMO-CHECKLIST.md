@@ -150,6 +150,24 @@ Phenomenal Problems is an AI-powered dental insurance coding and revenue cycle m
 - [x] Provider dropdown on encounters (replaces free-text input)
 - [x] 3 demo providers seeded (Mitchell/General, Park/Prostho, Torres/OralSurg)
 
+### PMS Integrations (Practice Management Systems)
+- [x] **Dentrix** (Henry Schein One) — 3 connection methods:
+  - DTXAPI (G7+): REST API on office server, requires API key from Henry Schein
+  - Dentrix Ascend (Cloud): OAuth2 REST API, requires client credentials
+  - Bridge Files (G5+): Import pipe/tab/CSV delimited export files — works with any version
+- [x] **Open Dental** — REST API adapter (localhost:30222/api/v1), requires API key
+- [x] **CSV Import/Export** — Generic adapter for any PMS that can export CSV files
+- [x] **Mock Adapter** — For demo/testing with sample data
+- [x] All adapters implement same interface: pull patients, pull encounters, pull treatment history, push claims, get fee schedules
+- [x] PMS API endpoints: check status, list patients, import patient, import encounter
+
+#### How to Connect a Practice's PMS
+1. **Dentrix G7+**: Practice generates API key in Dentrix Setup > Advanced Setup > API. Enter the office server IP and key in Practice Setup.
+2. **Dentrix G5/G6**: Use Bridge Files — export from Dentrix Bridge feature, upload to Phenomenal Problems.
+3. **Dentrix Ascend**: Register app in Ascend developer portal, get OAuth credentials, enter in Practice Setup.
+4. **Open Dental**: Enable API in Open Dental Setup > Advanced Setup > API. Enter server IP and key.
+5. **Other PMS**: Export patient data as CSV, import through the CSV adapter.
+
 ### Bug Fixes Applied
 - [x] Create patient lazy load bug fixed
 - [x] Crown code RAG retrieval fixed (keyword boosting)

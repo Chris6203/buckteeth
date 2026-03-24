@@ -51,7 +51,7 @@ Modular monolith with clear module boundaries and multi-tenant row-level isolati
 | Pre-Submission Validation | Check frequency rules, documentation, preauth, benefits before submitting |
 | Image Verification | Claude Vision verifies X-rays/photos support coded procedures |
 | Coding Update Agent | Monitors 7 sources for CDT/payer rule changes, AI-powered analysis |
-| PMS Adapters | Integrate with practice management systems (Open Dental, CSV import/export) |
+| PMS Adapters | Integrate with Dentrix (DTXAPI/Ascend/Bridge), Open Dental (REST API), CSV import/export |
 | Dashboard | React PWA with voice dictation, image upload, mobile-responsive dark theme |
 
 ## Getting Started
@@ -262,7 +262,7 @@ src/buckteeth/                     # 77 Python files, 16,279 lines
 ├── denials/             # Appeal generator, commissioner letters, risk scorer, feedback engine
 ├── forms/               # ADA dental claim form PDF generation (ReportLab)
 ├── edi/                 # X12 837D, 270/271, 835, payer directory, clearinghouse adapters
-├── pms/                 # PMS adapters (Mock, Open Dental, CSV)
+├── pms/                 # PMS adapters (Dentrix, Open Dental, CSV, Mock)
 └── knowledge/           # CDT codes (315), payer rules, case law repository
 
 frontend/                # 23 TypeScript/TSX files
@@ -316,7 +316,7 @@ tests/                   # Backend tests (pytest, async)
 | 3 | Submission Gateway — clearinghouse adapters, eligibility | Done |
 | 4 | Denial Management — appeals, commissioner letters, mail | Done |
 | 5 | Advanced Ingestion & Risk — image analysis, voice, risk scoring, PDF forms | Done |
-| 6 | PMS Adapters — Open Dental, CSV import/export, sync API | Done |
+| 6 | PMS Adapters — Dentrix (DTXAPI/Ascend/Bridge), Open Dental, CSV, sync API | Done |
 | 7 | React Dashboard — frontend with patients, claims, denials pages | Done |
 | 8 | Phenomenal Problems — rebranding, dark theme, mobile PWA, voice dictation | Done |
 | 9 | EDI Insurance Layer — X12 837D/270/271/835, 26-payer directory, clearinghouse adapters | Done |
