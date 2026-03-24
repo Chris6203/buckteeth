@@ -24,7 +24,6 @@ export default function Encounters() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [providersList, setProvidersList] = useState<Provider[]>([]);
   const [patientId, setPatientId] = useState("");
-  const [patientSearch, setPatientSearch] = useState("");
   const [providerName, setProviderName] = useState(() => {
     try {
       const setup = JSON.parse(localStorage.getItem("pp_practice_setup") || "{}");
@@ -455,57 +454,11 @@ export default function Encounters() {
               Patient & Provider
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="relative" onBlur={() => setTimeout(() => { if (patientId) setPatientSearch(""); }, 200)}>
-                <input
-                  value={patientSearch}
-                  onChange={(e) => setPatientSearch(e.target.value)}
-                  placeholder="Search patients..."
-                  className="input-field w-full"
-                />
-                {patientSearch && (
-                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-navy-800 border border-white/[0.1] rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    {patients
-                      .filter((p) =>
-                        `${p.first_name} ${p.last_name}`
-                          .toLowerCase()
-                          .includes(patientSearch.toLowerCase()),
-                      )
-                      .map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            setPatientId(p.id);
-                            setPatientSearch("");
-                          }}
-                          className={`w-full text-left px-4 py-2.5 text-sm font-body hover:bg-white/[0.04] transition-colors ${
-                            patientId === p.id ? "text-cyan" : "text-gray-300"
-                          }`}
-                        >
-                          {p.first_name} {p.last_name}
-                          <span className="text-gray-600 ml-2 text-xs">
-                            DOB: {p.date_of_birth}
-                          </span>
-                        </button>
-                      ))}
-                    {patients.filter((p) =>
-                      `${p.first_name} ${p.last_name}`
-                        .toLowerCase()
-                        .includes(patientSearch.toLowerCase()),
-                    ).length === 0 && (
-                      <p className="px-4 py-2.5 text-sm text-gray-500">
-                        No patients found
-                      </p>
-                    )}
-                  </div>
-                )}
-                {!patientSearch && patientId && (
-                  <p className="text-xs text-cyan mt-1">
-                    {patients.find((p) => p.id === patientId)?.first_name}{" "}
-                    {patients.find((p) => p.id === patientId)?.last_name} selected
-                  </p>
-                )}
-              </div>
+              <PatientSelector
+                patients={patients}
+                selectedId={patientId}
+                onSelect={(id) => setPatientId(id)}
+              />
               {providersList.length > 0 ? (
                 <select
                   value={providerName}
@@ -1371,6 +1324,116 @@ export default function Encounters() {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function PatientSelector({
+  patients,
+  selectedId,
+  onSelect,
+}: {
+  patients: Patient[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const selected = patients.find((p) => p.id === selectedId);
+  const filtered = patients.filter((p) =>
+    `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <div className="relative">
+      {/* Selected patient display / trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="input-field w-full text-left flex items-center justify-between"
+      >
+        {selected ? (
+          <span className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-cyan/20 flex items-center justify-center text-xs font-heading font-bold text-cyan">
+              {selected.first_name[0]}{selected.last_name[0]}
+            </span>
+            <span className="text-gray-200">{selected.first_name} {selected.last_name}</span>
+            <span className="text-gray-600 text-xs">
+              {(selected.insurance_plans || []).find((ip) => ip.plan_type === "primary")?.payer_name || ""}
+            </span>
+          </span>
+        ) : (
+          <span className="text-gray-500">Select a patient...</span>
+        )}
+        <svg className={`w-4 h-4 text-gray-500 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-navy-800 border border-white/[0.1] rounded-xl shadow-lg overflow-hidden">
+          {/* Search */}
+          <div className="p-2 border-b border-white/[0.06]">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Type to filter..."
+              className="w-full bg-navy-900 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan/30"
+              autoFocus
+            />
+          </div>
+
+          {/* Patient list */}
+          <div className="max-h-56 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-gray-500">No patients found</p>
+            ) : (
+              filtered.map((p) => {
+                const primary = (p.insurance_plans || []).find((ip) => ip.plan_type === "primary");
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      onSelect(p.id);
+                      setOpen(false);
+                      setSearch("");
+                    }}
+                    className={`w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-white/[0.04] transition-colors ${
+                      selectedId === p.id ? "bg-cyan/5" : ""
+                    }`}
+                  >
+                    <span className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-heading font-bold text-gray-400 shrink-0">
+                      {p.first_name[0]}{p.last_name[0]}
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium ${selectedId === p.id ? "text-cyan" : "text-gray-200"}`}>
+                        {p.first_name} {p.last_name}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        DOB: {p.date_of_birth}
+                        {primary && <span className="ml-2 text-gray-600">{primary.payer_name}</span>}
+                      </p>
+                    </div>
+                    {selectedId === p.id && (
+                      <svg className="w-4 h-4 text-cyan shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close */}
+      {open && (
+        <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setSearch(""); }} />
       )}
     </div>
   );
