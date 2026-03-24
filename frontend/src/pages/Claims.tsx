@@ -96,12 +96,21 @@ export default function Claims() {
     }
   }
 
+  const [assessingId, setAssessingId] = useState<string | null>(null);
+
   async function handleAssessRisk(claimId: string) {
     try {
+      setAssessingId(claimId);
       const assessment = await assessRisk(claimId);
       setRiskResult({ claimId, assessment });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to assess risk");
+      setError(
+        (err instanceof Error ? err.message : "Failed to assess risk").includes("Internal Server Error")
+          ? "Risk assessment requires a valid API key. Check Practice Setup."
+          : err instanceof Error ? err.message : "Failed to assess risk"
+      );
+    } finally {
+      setAssessingId(null);
     }
   }
 
@@ -310,9 +319,15 @@ export default function Claims() {
                           )}
                           <button
                             onClick={() => handleAssessRisk(c.id)}
-                            className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                            disabled={assessingId === c.id}
+                            className="text-gray-500 hover:text-gray-300 text-sm transition-colors disabled:text-gray-600"
                           >
-                            Risk
+                            {assessingId === c.id ? (
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-3 h-3 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
+                                Analyzing...
+                              </span>
+                            ) : "Risk"}
                           </button>
                         </div>
                       </td>
@@ -525,9 +540,15 @@ export default function Claims() {
                   )}
                   <button
                     onClick={() => handleAssessRisk(c.id)}
-                    className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+                    disabled={assessingId === c.id}
+                    className="text-gray-500 hover:text-gray-300 text-sm transition-colors disabled:text-gray-600"
                   >
-                    Risk
+                    {assessingId === c.id ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
+                        Analyzing...
+                      </span>
+                    ) : "Risk"}
                   </button>
                 </div>
               </div>
